@@ -12,12 +12,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* No prefers-color-scheme dark override, deliberately: each space will
+   get one chosen background treatment in Phase 6, not an automatic
+   light/dark swap based on the visitor's OS setting (see
+   docs/DESIGN-SYSTEM.md — that's an explicitly deferred, not-yet-built
+   option, not the default). */
 
 body {
   background: var(--background);

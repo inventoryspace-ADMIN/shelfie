@@ -74,6 +74,21 @@ export function ItemForm({
   );
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Collapsed by default for a quick add — expanded automatically when
+  // editing an item that already has any of this filled in, so nothing
+  // already entered is hidden from the owner.
+  const [showDetails, setShowDetails] = useState(
+    Boolean(
+      existingItem &&
+        (existingItem.description ||
+          existingItem.outboundUrl ||
+          existingItem.hoverImageUrl ||
+          (existingItem.attributes &&
+            Object.values(existingItem.attributes as Record<string, unknown>).some(
+              (v) => (Array.isArray(v) ? v.length > 0 : Boolean(v))
+            )))
+    )
+  );
 
   const resolver = zodResolver(
     formFieldsSchema.extend({ attributes: templates[template].attributesSchema })
@@ -176,20 +191,8 @@ export function ItemForm({
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="description" className="text-sm font-medium">
-            Description
-          </label>
-          <textarea
-            id="description"
-            rows={3}
-            {...methods.register("description")}
-            className="rounded border border-neutral-300 px-3 py-2 text-sm"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
           <label htmlFor="value" className="text-sm font-medium">
-            Value (optional)
+            Price (optional)
           </label>
           <input
             id="value"
@@ -203,39 +206,63 @@ export function ItemForm({
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="outboundUrl" className="text-sm font-medium">
-            Outbound link (optional)
-          </label>
-          <input
-            id="outboundUrl"
-            type="url"
-            placeholder="https://..."
-            {...methods.register("outboundUrl")}
-            className="rounded border border-neutral-300 px-3 py-2 text-sm"
-          />
-          {methods.formState.errors.outboundUrl && (
-            <p className="text-xs text-red-600">
-              {methods.formState.errors.outboundUrl.message}
-            </p>
-          )}
-        </div>
-
         <ImagePicker
           label="Primary photo"
           value={primaryImage}
           onChange={setPrimaryImage}
         />
 
-        <ImagePicker
-          label="Hover photo (optional)"
-          helperText="Shown on ~500ms hover as a second angle."
-          value={hoverImage}
-          onChange={setHoverImage}
-        />
+        <button
+          type="button"
+          onClick={() => setShowDetails((v) => !v)}
+          className="self-start text-sm font-medium underline"
+        >
+          {showDetails ? "− Hide extra details" : "+ Add more details"}
+        </button>
 
-        {template === "wardrobe" && <WardrobeFields />}
-        {template === "custom" && <CustomFields />}
+        {showDetails && (
+          <div className="flex flex-col gap-6 rounded border border-neutral-200 p-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
+              <textarea
+                id="description"
+                rows={3}
+                {...methods.register("description")}
+                className="rounded border border-neutral-300 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="outboundUrl" className="text-sm font-medium">
+                Outbound link (optional)
+              </label>
+              <input
+                id="outboundUrl"
+                type="url"
+                placeholder="https://..."
+                {...methods.register("outboundUrl")}
+                className="rounded border border-neutral-300 px-3 py-2 text-sm"
+              />
+              {methods.formState.errors.outboundUrl && (
+                <p className="text-xs text-red-600">
+                  {methods.formState.errors.outboundUrl.message}
+                </p>
+              )}
+            </div>
+
+            <ImagePicker
+              label="Hover photo (optional)"
+              helperText="Shown on ~500ms hover as a second angle."
+              value={hoverImage}
+              onChange={setHoverImage}
+            />
+
+            {template === "wardrobe" && <WardrobeFields />}
+            {template === "custom" && <CustomFields />}
+          </div>
+        )}
 
         {serverError && <p className="text-sm text-red-600">{serverError}</p>}
 

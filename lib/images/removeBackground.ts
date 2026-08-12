@@ -15,6 +15,8 @@
 
 const MAX_DIMENSION = 1200;
 const DEFAULT_THRESHOLD = 45;
+const FEATHER_WIDTH = 30;
+const CROP_PADDING_RATIO = 0.04;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -141,6 +143,98 @@ export async function removeBackground(
     tryEnqueue(x, y + 1);
   }
 
+  // Soften the hard flood-fill boundary: a pixel right at the edge of the
+  // removed region is often a color *blend* of the item and the original
+  // background (ordinary photo antialiasing), not one or the other. Left
+  // fully opaque, that blend shows up as a faint background-colored fringe
+  // around the item. Fade those specific edge pixels toward transparent
+  // instead of leaving them hard-cut.
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
+      if (visited[idx]) continue;
+
+      const touchesRemoved =
+        (x > 0 && visited[idx - 1]) ||
+        (x < width - 1 && visited[idx + 1]) ||
+        (y > 0 && visited[idx - width]) ||
+        (y < height - 1 && visited[idx + width]);
+      if (!touchesRemoved) continue;
+
+      const i = idx * 4;
+      const distance = colorDistance(
+        data[i],
+        data[i + 1],
+        data[i + 2],
+        bgR,
+        bgG,
+        bgB
+      );
+      if (distance < threshold + FEATHER_WIDTH) {
+        const alphaRatio = Math.max(
+          0,
+          Math.min(1, (distance - threshold) / FEATHER_WIDTH)
+        );
+        data[i + 3] = Math.round(alphaRatio * 255);
+      }
+    }
+  }
+
+  // Crop to the item's actual bounding box (any pixel left with meaningful
+  // opacity), not the original photo's canvas. Two photos of the same item
+  // shot at different distances/crops would otherwise end up rendering at
+  // different apparent sizes even after background removal, since a plain
+  // "fit the photo in the frame" scale has no idea how much of each photo
+  // was actually the item versus empty space around it.
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (data[(y * width + x) * 4 + 3] > 10) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
   ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL("image/png");
+
+  if (maxX < minX || maxY < minY) {
+    // Nothing survived (e.g. a near-uniform photo) — fall back to the
+    // uncropped result rather than producing an empty image.
+    return canvas.toDataURL("image/png");
+  }
+
+  const boxWidth = maxX - minX + 1;
+  const boxHeight = maxY - minY + 1;
+  const padding = Math.round(Math.max(boxWidth, boxHeight) * CROP_PADDING_RATIO);
+  const cropX = Math.max(0, minX - padding);
+  const cropY = Math.max(0, minY - padding);
+  const cropWidth = Math.min(width, maxX + padding + 1) - cropX;
+  const cropHeight = Math.min(height, maxY + padding + 1) - cropY;
+
+  const croppedCanvas = document.createElement("canvas");
+  croppedCanvas.width = cropWidth;
+  croppedCanvas.height = cropHeight;
+  const croppedCtx = croppedCanvas.getContext("2d");
+  if (!croppedCtx) {
+    return canvas.toDataURL("image/png");
+  }
+  croppedCtx.drawImage(
+    canvas,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    cropWidth,
+    cropHeight
+  );
+
+  return croppedCanvas.toDataURL("image/png");
 }
