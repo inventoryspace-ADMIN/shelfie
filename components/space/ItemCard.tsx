@@ -25,7 +25,8 @@ export function ItemCard({
 }) {
   return (
     <div className="group">
-      <div className="relative mb-3 aspect-square [filter:drop-shadow(0_4px_20px_rgb(0_0_0/0.08))]">
+      {/* DIAGNOSTIC — temporary border to check container sizing, not the final look */}
+      <div className="relative mb-3 aspect-square border border-dashed border-red-400 [filter:drop-shadow(0_4px_20px_rgb(0_0_0/0.08))]">
         <Image
           src={item.primaryImageUrl}
           alt={item.title}
