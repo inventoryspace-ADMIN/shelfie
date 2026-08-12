@@ -203,6 +203,13 @@ These are real, and worth planning around, but starting them before Phase
 - **Full image galleries** beyond the launch front/back pair, if a
   template genuinely needs more angles (e.g. a car's interior/exterior/engine bay).
 - **"Follow visitor's system light/dark"** as a background-treatment option.
+- **True-to-life relative item sizing** — deliberately not what the grid
+  does now. Every card is a fixed-size square with its photo scaled via
+  `object-fit: contain`, so a hoodie and a t-shirt render in identically
+  sized boxes regardless of the real object's actual size. Genuinely
+  showing scale relative to other items (so a car looks bigger than its
+  keychain) is a real, separate idea — raised during Phase 4 testing,
+  explicitly deferred rather than built now.
 - **Custom domains** per space (currently: free `*.vercel.app` subdomain
   only, per your decision).
 - **Analytics trend view** (clicks over time), if simple counts turn out
