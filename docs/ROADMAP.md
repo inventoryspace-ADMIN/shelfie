@@ -75,6 +75,11 @@ and delete it. This is the phase where the product stops being abstract.
 
 - `/{username}/{slug}` public page — Server Component, grid layout,
   floating item cards, hover-swap interaction.
+- Category filter bar above the grid — "All" plus one button per distinct
+  `category` value present in that space (e.g. Tops, Bottoms, Denim,
+  Footwear). Moved here from Phase 7 at your request — text *search*
+  stays in Phase 7, category filtering ships with the page itself.
+- Visible item count near the top of the page (e.g. "13 items").
 - Visitor interaction, per your spec from Phase 4 testing: **desktop** —
   hover cross-fades to the second angle, as already built. **Touch** — tap
   cross-fades to the second angle; a further tap (or hold — exact gesture
@@ -119,18 +124,20 @@ see an accurate preview, save, and see the public page reflect it exactly.
   hold-then-move — gets worked out here, not assumed in advance). This
   replaces the current dashboard's separate "Edit"/"Delete" text links
   below each card.
-- Category filter and text search on the public page (client-side is fine
-  at expected collection sizes — no need for a search service).
+- Text search on the public page (client-side is fine at expected
+  collection sizes — no need for a search service). Category filtering
+  itself now ships earlier, with the public page in Phase 5.
 - Consider a basic "filter by a shared custom field label" control (e.g.
   every item someone tagged "Size"), per the open question logged in
-  `docs/SCHEMA.md` "Template registry" — same filter-chip pattern as
-  category, sourced from a JSONB query instead. Pairs well with adding
-  label autocomplete (suggest labels already used elsewhere in the space)
-  to the item form, to keep labels consistent enough for this to actually
-  work. Not full faceted search — that's a separate, larger conversation.
+  `docs/SCHEMA.md` "Template registry" — same filter-chip pattern as the
+  Phase 5 category filter, sourced from a JSONB query instead. Pairs well
+  with adding label autocomplete (suggest labels already used elsewhere
+  in the space) to the item form, to keep labels consistent enough for
+  this to actually work. Not full faceted search — that's a separate,
+  larger conversation.
 
 **Definition of done:** with 15+ items in a space, you can reorder them by
-drag, and a visitor can filter down to one category or search by name.
+drag, and a visitor can search by name.
 
 ## Phase 8 — Click tracking, outbound redirect, basic analytics
 *Goal: the affiliate-ready plumbing, and a reason for an owner to check
