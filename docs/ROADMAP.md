@@ -241,3 +241,166 @@ These are real, and worth planning around, but starting them before Phase
   designed yet; revisit once the plain grid from Phase 5 is live and it's
   clear which items in a real space would actually benefit from standing
   out.
+
+---
+
+## Reducing friction when creating a space (brainstormed, not scheduled)
+
+Kept deliberately separate from the post-launch list above — this is one
+cohesive brainstorm about one specific problem, not a grab-bag, and
+mixing it in would bury the thread. **The core problem:** getting a photo
+and details for every item is the real bottleneck. Someone cataloguing an
+entire wardrobe, a cologne collection, or a golf bag has to repeat the
+same form dozens of times. None of this is built or scheduled — logged
+per your request while we stay focused on Phase 5.
+
+Your question was which phase each realistically belongs in, and whether
+any are small enough to slot in before Phase 11 rather than after. My
+read, organized by that:
+
+### Small enough to genuinely consider before launch
+
+These three don't touch the schema, don't open any new security surface,
+and are each isolated to code that already exists — none of that's true
+of the "highest priority" trio below, despite the trio being more
+impactful once built. Flagging them as candidates, not deciding to build
+them — say the word if you want any pulled into an actual phase.
+
+- **#2, paste an image from the clipboard.** Genuinely tiny: a `paste`
+  event listener on the existing `ImagePicker`, feeding into the exact
+  same code path a file-input selection already uses. No new component,
+  no new backend call, single client-side file. The cheapest win on this
+  entire list.
+- **#4, "Add another."** After saving, stay on the form instead of
+  redirecting to the dashboard, with category pre-filled from what was
+  just entered. A redirect-target change plus one pre-filled default —
+  small, isolated to the existing create-item flow.
+- **#8, camera-first on mobile — partially.** The core mechanism is
+  almost free: the standard HTML file input attribute
+  `capture="environment"` hints mobile browsers to open the camera
+  directly instead of a gallery/file picker, with automatic graceful
+  fallback on desktop. That alone gets you most of "tap add, camera
+  opens." A fully streamlined *shoot → next → shoot → next* flow (as
+  opposed to just skipping straight to the camera within the existing
+  form) is more work and belongs with the rest of this list, not this
+  fast-path.
+
+### Post-launch — the highest-priority trio
+
+Real impact (an evening of data entry down to ~15 minutes, per your
+estimate), but each is genuinely new scope, not a tweak to something that
+exists:
+
+- **#1, paste a product URL to auto-fill.** The most valuable of the
+  three, and the most involved — see the dedicated considerations section
+  below before building this one.
+- **#3, bulk photo upload creating draft items.** Needs a real design
+  decision before any code: `items.title` is currently required
+  (`NOT NULL`, 1–100 chars), so a photo-only draft item needs either a
+  schema change (nullable title, or a lightweight draft/status concept
+  mirroring how spaces are draft-until-published) or an entirely
+  client-side staging area that only writes to the database once every
+  item has a name. The second avoids touching the schema but risks losing
+  uploaded-but-unsaved work if the tab closes mid-batch. Worth resolving
+  that question deliberately, not defaulting into either option.
+- Recommended build order for this trio once you're past launch: **#1
+  first** (highest leverage per item), then **#3**, since bulk upload's
+  draft-item question gets easier to answer once the URL-fill flow has
+  already established a pattern for "an item that exists with a photo but
+  incomplete details."
+
+### Post-launch — also worth doing, lower urgency
+
+- **#5, autocomplete from existing data.** Folds directly into the
+  shared-custom-field-label idea already logged in Phase 7 above and in
+  `docs/SCHEMA.md` "Template registry" — same underlying need (suggest
+  values already used elsewhere in the space), so build them together
+  rather than twice. One adjustment: drop "brand" from this — Wardrobe's
+  dedicated Brand field was removed when templates were unified onto the
+  open custom-fields system, so brand is just another custom field label
+  now, not a special case.
+- **#6, duplicate item.** Small-to-medium. Mostly a new Server Action
+  copying an existing item's row (new id, same everything else) —
+  cheapest if it copies the existing image files to the new item's
+  storage path via Supabase Storage's `copy` API rather than
+  re-downloading and reprocessing them, since the photo itself isn't
+  changing. Reasonable early post-launch pick.
+- **#8, the fuller camera-first flow.** The streamlined multi-shot
+  version, beyond the free `capture` attribute noted above.
+
+### Post-launch — bigger, needs its own design conversation
+
+- **#7, let people build before signing up.** Not small — this is an
+  architecture change, not a UX tweak. Every write in the app currently
+  requires `auth.uid()` (see every RLS policy in `docs/SCHEMA.md`), so
+  "add a few items, then create an account" needs either genuine
+  anonymous sessions (Supabase supports anonymous sign-ins natively,
+  worth researching as the likely building block, with the anonymous
+  session's data re-owned to the real account at signup) or a
+  client-side-only staging area with the same lost-work-on-close risk
+  noted under #3. Real conversion-rate upside, per your instinct — but
+  deserves a dedicated conversation about the mechanism before any of it
+  gets designed, not a bullet point's worth of decision-making.
+
+### Explicitly last
+
+- **#9, auto-suggest title/category from a photo via a vision model.**
+  Your own sequencing, and it's correct: only worth considering once
+  everything above exists. The one thing that makes this different from
+  every other idea on this list — genuine **per-item running cost** (a
+  vision API call per photo), not a one-time build cost. Whenever this
+  gets picked up, it needs a usage/cost control built in alongside it,
+  not bolted on after the first surprising bill.
+
+### Technical & legal considerations for #1 (paste a product URL)
+
+Flagging these now, specifically requested, so future work on this
+doesn't hit them blind:
+
+- **Scraping sits in a legal gray zone.** Many e-commerce sites' Terms of
+  Service prohibit automated fetching of their pages, even just reading
+  meta tags. For a personal cataloguing tool operating at individual-user
+  scale, the practical risk is low — but it isn't zero, and it grows if
+  the product ever fetches at real volume from a shared set of server IPs
+  (e.g. Vercel's), which is exactly what this feature would do.
+- **Re-hosting a product photo is a copyright question, not just a
+  technical one.** Downloading a retailer's product image and storing a
+  permanent copy in our own Supabase Storage bucket copies copyrighted
+  material, even for personal, non-commercial display. Very low
+  real-world risk at hobbyist scale, similar to saving a screenshot — but
+  worth being aware of before this runs at any real scale, not something
+  to discover after the fact. Hotlinking the original URL instead of
+  copying it sidesteps the copyright question but trades it for a
+  reliability one (the source can delete or move the image anytime,
+  silently breaking the display), and it wouldn't be compatible with
+  running our own background-removal step, which needs actual pixel
+  access to the image, not a remote reference.
+- **This has to be fetched server-side, not client-side — not a style
+  choice, a hard requirement.** A browser fetching a third-party image
+  directly and then trying to read its pixels via canvas (which the
+  existing background-removal step requires) will hit a CORS "tainted
+  canvas" error on the vast majority of e-commerce image hosts, since
+  most don't send permissive CORS headers. The image has to be fetched by
+  our own server first, then handed to the client as data our own origin
+  served, before the existing canvas-based removal code can touch it.
+- **This is an SSRF (server-side request forgery) surface, and needs
+  hardening as such.** The moment the server accepts an arbitrary
+  user-supplied URL and fetches it, a malicious signed-in user could
+  point it at an internal address instead of a real product page (cloud
+  metadata endpoints, internal services) to try to get our own server to
+  leak something back to them. Building this safely means validating the
+  URL scheme (http/https only), rejecting private/internal IP ranges,
+  enforcing a request timeout, and capping the response size — this is a
+  real security requirement for whoever builds it, not an edge case to
+  skip.
+- **Metadata is unreliable by default, not by exception.** Design around
+  this from the start: plenty of product pages have no Open Graph tags or
+  schema.org markup at all, or have an `og:image` pointing at a generic
+  logo instead of the actual product. Title and image are reasonably
+  reliable when present (via `og:title` / `og:image`); price is the least
+  reliable of the three — prefer structured `schema.org` Product markup
+  (`offers.price` / `offers.priceCurrency`) over Open Graph's much rarer
+  `og:price:amount` tag when both are absent, expect neither to always be
+  there, and the "graceful fallback to manual entry" you already called
+  out isn't optional polish — it's the main path for a meaningful share
+  of real pages.
