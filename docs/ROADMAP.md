@@ -75,6 +75,12 @@ and delete it. This is the phase where the product stops being abstract.
 
 - `/{username}/{slug}` public page — Server Component, grid layout,
   floating item cards, hover-swap interaction.
+- Visitor interaction, per your spec from Phase 4 testing: **desktop** —
+  hover cross-fades to the second angle, as already built. **Touch** — tap
+  cross-fades to the second angle; a further tap (or hold — exact gesture
+  to be finalized here, not guessed at now) opens an enlarged view with
+  the item's full details. That enlarged/detail view doesn't exist yet in
+  any form — designing it is part of this phase, not an assumption.
 - Publish/unpublish toggle in the dashboard.
 - `opengraph-image.tsx` — generated share card via `@vercel/og`.
 - Full meta tag set (title, description, OG image, Twitter card) on the
@@ -106,6 +112,13 @@ see an accurate preview, save, and see the public page reflect it exactly.
 *Goal: usable at real collection sizes, not just 3 demo items.*
 
 - Drag-to-reorder in the dashboard, persisting `sort_order`.
+- Owner-side interaction model on the dashboard, per your Phase 4 testing
+  spec: **touch** — tap an item to edit it, hold to pick it up and drag.
+  **Desktop** — hold to edit or drag (exact way of telling "you're about
+  to edit" from "you're about to drag" apart — e.g. hold-then-release vs
+  hold-then-move — gets worked out here, not assumed in advance). This
+  replaces the current dashboard's separate "Edit"/"Delete" text links
+  below each card.
 - Category filter and text search on the public page (client-side is fine
   at expected collection sizes — no need for a search service).
 
