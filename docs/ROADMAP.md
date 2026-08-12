@@ -210,6 +210,18 @@ These are real, and worth planning around, but starting them before Phase
   showing scale relative to other items (so a car looks bigger than its
   keychain) is a real, separate idea — raised during Phase 4 testing,
   explicitly deferred rather than built now.
+- **Optional "auto-rescale items to match" per space** — a distinct idea
+  from true-to-life sizing above, not the opposite of it. Even with equal
+  fixed-size boxes (the current, correct default), how much of its own
+  box an item visually fills still depends on how close/zoomed the
+  original photo was — two genuinely same-sized garments can read as
+  inconsistent scale next to each other purely from how they were shot,
+  confirmed during Phase 4 testing as a real (if minor) rough edge, not a
+  bug. The idea: an owner-facing toggle, off by default, that has the app
+  analyze every item in a space and normalize their apparent fill/scale
+  in the grid. Must stay opt-in — some owners will want a piece to
+  deliberately stand out bigger, so this can never be forced or
+  default-on. Not designed yet, just recorded.
 - **Custom domains** per space (currently: free `*.vercel.app` subdomain
   only, per your decision).
 - **Analytics trend view** (clicks over time), if simple counts turn out
