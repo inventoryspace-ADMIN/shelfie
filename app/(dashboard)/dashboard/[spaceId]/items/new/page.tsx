@@ -28,7 +28,7 @@ export default async function NewItemPage({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col gap-6 p-8">
+    <main className="mx-auto flex min-h-screen max-w-sm flex-col gap-6 p-8 lg:max-w-3xl">
       <div>
         <Link
           href={`/dashboard/${spaceId}`}

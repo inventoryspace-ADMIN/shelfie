@@ -44,7 +44,7 @@ export default async function SpacePage({
   const bucket = supabase.storage.from("space-images");
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-8">
+    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-8 lg:max-w-6xl">
       <div>
         <Link href="/dashboard" className="text-sm text-neutral-500 underline">
           ← Back
@@ -83,7 +83,7 @@ export default async function SpacePage({
       </div>
 
       {items && items.length > 0 ? (
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {items.map((item) => (
             <div key={item.id}>
               <ItemCard

@@ -8,7 +8,7 @@ export function WardrobeFields() {
   const { register } = useFormContext();
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div className="flex flex-col gap-1">
         <label htmlFor="attributes.brand" className="text-sm font-medium">
           Brand

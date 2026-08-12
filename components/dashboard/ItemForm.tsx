@@ -160,57 +160,61 @@ export function ItemForm({
   return (
     <FormProvider {...methods}>
       <form onSubmit={onSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="title" className="text-sm font-medium">
-            Title
-          </label>
-          <input
-            id="title"
-            type="text"
-            {...methods.register("title")}
-            className="rounded border border-neutral-300 px-3 py-2 text-sm"
-          />
-          {methods.formState.errors.title && (
-            <p className="text-xs text-red-600">
-              {methods.formState.errors.title.message}
-            </p>
-          )}
-        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="flex flex-col gap-1 lg:col-span-2">
+            <label htmlFor="title" className="text-sm font-medium">
+              Title
+            </label>
+            <input
+              id="title"
+              type="text"
+              {...methods.register("title")}
+              className="rounded border border-neutral-300 px-3 py-2 text-sm"
+            />
+            {methods.formState.errors.title && (
+              <p className="text-xs text-red-600">
+                {methods.formState.errors.title.message}
+              </p>
+            )}
+          </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="category" className="text-sm font-medium">
-            Category
-          </label>
-          <input
-            id="category"
-            type="text"
-            placeholder="e.g. Tops, Footwear"
-            {...methods.register("category")}
-            className="rounded border border-neutral-300 px-3 py-2 text-sm"
-          />
-        </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="category" className="text-sm font-medium">
+              Category
+            </label>
+            <input
+              id="category"
+              type="text"
+              placeholder="e.g. Tops, Footwear"
+              {...methods.register("category")}
+              className="rounded border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="value" className="text-sm font-medium">
-            Price (optional)
-          </label>
-          <input
-            id="value"
-            type="number"
-            step="0.01"
-            min="0"
-            {...methods.register("value", {
-              setValueAs: (v) => (v === "" ? undefined : Number(v)),
-            })}
-            className="rounded border border-neutral-300 px-3 py-2 text-sm"
-          />
-        </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="value" className="text-sm font-medium">
+              Price (optional)
+            </label>
+            <input
+              id="value"
+              type="number"
+              step="0.01"
+              min="0"
+              {...methods.register("value", {
+                setValueAs: (v) => (v === "" ? undefined : Number(v)),
+              })}
+              className="rounded border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </div>
 
-        <ImagePicker
-          label="Primary photo"
-          value={primaryImage}
-          onChange={setPrimaryImage}
-        />
+          <div className="lg:col-span-2">
+            <ImagePicker
+              label="Primary photo"
+              value={primaryImage}
+              onChange={setPrimaryImage}
+            />
+          </div>
+        </div>
 
         <button
           type="button"
@@ -221,8 +225,8 @@ export function ItemForm({
         </button>
 
         {showDetails && (
-          <div className="flex flex-col gap-6 rounded border border-neutral-200 p-4">
-            <div className="flex flex-col gap-1">
+          <div className="grid grid-cols-1 gap-6 rounded border border-neutral-200 p-4 lg:grid-cols-2">
+            <div className="flex flex-col gap-1 lg:col-span-2">
               <label htmlFor="description" className="text-sm font-medium">
                 Description
               </label>
@@ -259,8 +263,16 @@ export function ItemForm({
               onChange={setHoverImage}
             />
 
-            {template === "wardrobe" && <WardrobeFields />}
-            {template === "custom" && <CustomFields />}
+            {template === "wardrobe" && (
+              <div className="lg:col-span-2">
+                <WardrobeFields />
+              </div>
+            )}
+            {template === "custom" && (
+              <div className="lg:col-span-2">
+                <CustomFields />
+              </div>
+            )}
           </div>
         )}
 
