@@ -198,29 +198,17 @@ OG share images.
 
 ## Template registry
 
-A template is a Zod schema plus field labels, living in `lib/templates/`,
-registered by key. `spaces.template` stores the key; `items.attributes` is
-validated against the matching schema. Adding a template later is a code
-change (a new file + registry entry), **not** a migration.
+**Revised during Phase 4 testing, superseding the original per-template
+schema design below.** The original plan was a distinct Zod schema per
+template (Wardrobe having `brand`/`size`/`whereBought`/`condition` as
+dedicated fields, Custom having open label/value pairs). Testing it made
+clear that was the wrong call for this product: it meant the app decided
+what details mattered for a category ("Wardrobe means Size and
+Condition"), when the actual goal is the owner deciding what's worth
+recording per item, on an item-by-item basis.
 
-### `wardrobe` (launch)
-
-```ts
-{
-  brand: z.string().max(50).optional(),
-  size: z.string().max(20).optional(),
-  whereBought: z.string().max(100).optional(),
-  condition: z.enum(['new', 'like-new', 'good', 'worn']).optional(),
-}
-```
-
-`value` (top-level column) is used as "price paid." `category` (top-level
-column) is used for things like "Tops," "Footwear," "Outerwear."
-
-### `custom` (launch)
-
-For anything without a dedicated template yet — sneakers, watches, vinyl,
-plants, tools, whatever doesn't fit the curated list.
+Every template now shares one open-ended attributes shape, defined once in
+`lib/templates/attributes.ts`:
 
 ```ts
 {
@@ -233,16 +221,52 @@ plants, tools, whatever doesn't fit the curated list.
 }
 ```
 
-The owner defines their own label/value pairs per item (e.g. "Mileage:
-42,000"). Capped at 10 fields so the item form and the public card layout
-stay predictable.
+The owner defines their own label/value pairs per item (e.g. "Size: M",
+"Mileage: 42,000"). Capped at 10 fields so the item form and the public
+card layout stay predictable. `value` (the top-level column) is used as
+price paid or a plain quantity, depending on the space's
+`value_display_mode`; `category` (also top-level) is used for things like
+"Tops," "Footwear," "Irons."
+
+`spaces.template` (`wardrobe` and `custom` at launch) still exists and is
+still chosen at space-creation — it's just no longer tied to a different
+data shape. Right now it only drives the label/description shown in the
+template picker; it's a placeholder for future template-specific behavior
+(e.g. suggested categories or starter field names per template) rather
+than a mechanism for different validation. Adding a template later is
+still a code change (a new file in `lib/templates/` + registry entry),
+never a migration — that part is unchanged.
+
+### Open question, deliberately not built yet
+
+Testing also raised: if the same field label (e.g. "Size") is reused
+across several items in a space, could the app recognize that as a shared
+attribute — eventually enabling filtering by it? Worth recording the
+answer here even though nothing is built:
+
+- The data is already shaped to make this cheap later — `fields` is an
+  array of `{label, value}` pairs, not freeform text, so "which items in
+  this space have a field labeled X" is a straightforward JSONB query
+  against the existing column. No schema change needed to support it.
+- The real wrinkle is consistency, not the query: free-typed labels mean
+  "Size," "size," and "Sizing" are three different labels unless the form
+  helps the owner reuse what they've already typed elsewhere in the space
+  (e.g. autocomplete suggesting previously-used labels). That's a small,
+  self-contained addition worth doing whenever this becomes real.
+- A basic "filter items by a shared label" control is a natural fit for
+  the search/filtering work already planned in `docs/ROADMAP.md` Phase 7
+  — same UI pattern as the category filter, different data source.
+- Full faceted search (numeric ranges, multi-value facets, unit-aware
+  comparisons) is a genuinely separate feature, not an extension of this
+  one — not scoped anywhere, and shouldn't be assumed into Phase 7 without
+  a dedicated conversation first.
 
 ### Post-launch templates (roadmap only, not built yet)
 
-`garage`, `golf-bag`, `art-collection`, `sneakers` — each will follow the
-exact same pattern: a Zod schema in `lib/templates/`, a registry entry, and
-an entry in this document. No schema drafted yet; drafting one now would be
-speculative given none of these are scheduled before the 6-week milestone.
+`garage`, `golf-bag`, `art-collection`, `sneakers` — same registry
+pattern, same shared attributes shape. No schema drafted yet; drafting one
+now would be speculative given none of these are scheduled before the
+6-week milestone.
 
 ---
 

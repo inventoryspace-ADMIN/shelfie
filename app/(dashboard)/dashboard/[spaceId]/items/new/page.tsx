@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ItemForm } from "@/components/dashboard/ItemForm";
-import type { TemplateKey } from "@/lib/templates";
 
 export default async function NewItemPage({
   params,
@@ -19,7 +18,7 @@ export default async function NewItemPage({
 
   const { data: space } = await supabase
     .from("spaces")
-    .select("id, name, template, owner_id")
+    .select("id, name, owner_id, value_display_mode, value_currency")
     .eq("id", spaceId)
     .single();
 
@@ -41,7 +40,10 @@ export default async function NewItemPage({
       <ItemForm
         spaceId={space.id}
         ownerId={user.id}
-        template={space.template as TemplateKey}
+        valueDisplayMode={
+          space.value_display_mode as "hidden" | "currency" | "number"
+        }
+        valueCurrency={space.value_currency}
       />
     </main>
   );

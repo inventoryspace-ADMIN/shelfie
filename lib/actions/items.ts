@@ -4,22 +4,18 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { itemBaseSchema, updateItemBaseSchema } from "@/lib/validations/item";
-import { templates, type TemplateKey } from "@/lib/templates";
+import { itemAttributesSchema } from "@/lib/templates/attributes";
 import type { Json } from "@/types/supabase";
 
-async function getOwnedSpaceTemplate(
-  spaceId: string,
-  userId: string
-): Promise<TemplateKey | null> {
+async function ownsSpace(spaceId: string, userId: string): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("spaces")
-    .select("template, owner_id")
+    .select("owner_id")
     .eq("id", spaceId)
     .single();
 
-  if (!data || data.owner_id !== userId) return null;
-  return data.template as TemplateKey;
+  return data?.owner_id === userId;
 }
 
 export async function createItem(
@@ -38,13 +34,11 @@ export async function createItem(
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
 
-  const template = await getOwnedSpaceTemplate(parsed.data.spaceId, user.id);
-  if (!template) {
+  if (!(await ownsSpace(parsed.data.spaceId, user.id))) {
     return { error: "Space not found." };
   }
 
-  const attributesResult =
-    templates[template].attributesSchema.safeParse(rawAttributes);
+  const attributesResult = itemAttributesSchema.safeParse(rawAttributes);
   if (!attributesResult.success) {
     return {
       error: attributesResult.error.issues[0]?.message ?? "Invalid fields",
@@ -100,13 +94,11 @@ export async function updateItem(
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
 
-  const template = await getOwnedSpaceTemplate(parsed.data.spaceId, user.id);
-  if (!template) {
+  if (!(await ownsSpace(parsed.data.spaceId, user.id))) {
     return { error: "Space not found." };
   }
 
-  const attributesResult =
-    templates[template].attributesSchema.safeParse(rawAttributes);
+  const attributesResult = itemAttributesSchema.safeParse(rawAttributes);
   if (!attributesResult.success) {
     return {
       error: attributesResult.error.issues[0]?.message ?? "Invalid fields",

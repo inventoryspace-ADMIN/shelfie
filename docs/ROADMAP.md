@@ -121,6 +121,13 @@ see an accurate preview, save, and see the public page reflect it exactly.
   below each card.
 - Category filter and text search on the public page (client-side is fine
   at expected collection sizes — no need for a search service).
+- Consider a basic "filter by a shared custom field label" control (e.g.
+  every item someone tagged "Size"), per the open question logged in
+  `docs/SCHEMA.md` "Template registry" — same filter-chip pattern as
+  category, sourced from a JSONB query instead. Pairs well with adding
+  label autocomplete (suggest labels already used elsewhere in the space)
+  to the item form, to keep labels consistent enough for this to actually
+  work. Not full faceted search — that's a separate, larger conversation.
 
 **Definition of done:** with 15+ items in a space, you can reorder them by
 drag, and a visitor can filter down to one category or search by name.

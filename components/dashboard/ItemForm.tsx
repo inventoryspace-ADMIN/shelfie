@@ -5,18 +5,19 @@ import { useRouter } from "next/navigation";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { itemBaseSchema } from "@/lib/validations/item";
-import { templates, type TemplateKey } from "@/lib/templates";
+import { itemAttributesSchema } from "@/lib/templates/attributes";
 import { createItem, updateItem } from "@/lib/actions/items";
 import { uploadItemImage } from "@/lib/images/uploadItemImage";
 import { ImagePicker } from "./ImagePicker";
-import { WardrobeFields } from "./WardrobeFields";
 import { CustomFields } from "./CustomFields";
 
-const formFieldsSchema = itemBaseSchema.omit({
-  spaceId: true,
-  primaryImagePath: true,
-  hoverImagePath: true,
-});
+const formFieldsSchema = itemBaseSchema
+  .omit({
+    spaceId: true,
+    primaryImagePath: true,
+    hoverImagePath: true,
+  })
+  .extend({ attributes: itemAttributesSchema });
 
 interface ExistingItem {
   id: string;
@@ -49,15 +50,30 @@ async function resolveImagePath(
   return existingPath;
 }
 
+function valueFieldLabel(
+  valueDisplayMode: "hidden" | "currency" | "number",
+  valueCurrency: string | null
+): string {
+  if (valueDisplayMode === "currency") {
+    return valueCurrency ? `Price (${valueCurrency})` : "Price";
+  }
+  if (valueDisplayMode === "number") {
+    return "Quantity";
+  }
+  return "Value";
+}
+
 export function ItemForm({
   spaceId,
   ownerId,
-  template,
+  valueDisplayMode,
+  valueCurrency,
   existingItem,
 }: {
   spaceId: string;
   ownerId: string;
-  template: TemplateKey;
+  valueDisplayMode: "hidden" | "currency" | "number";
+  valueCurrency: string | null;
   existingItem?: ExistingItem;
 }) {
   const router = useRouter();
@@ -77,34 +93,31 @@ export function ItemForm({
   // Collapsed by default for a quick add — expanded automatically when
   // editing an item that already has any of this filled in, so nothing
   // already entered is hidden from the owner.
+  const existingFields = existingItem?.attributes as
+    | { fields?: unknown[] }
+    | null
+    | undefined;
   const [showDetails, setShowDetails] = useState(
     Boolean(
       existingItem &&
         (existingItem.description ||
           existingItem.outboundUrl ||
           existingItem.hoverImageUrl ||
-          (existingItem.attributes &&
-            Object.values(existingItem.attributes as Record<string, unknown>).some(
-              (v) => (Array.isArray(v) ? v.length > 0 : Boolean(v))
-            )))
+          (existingFields?.fields && existingFields.fields.length > 0))
     )
   );
 
-  const resolver = zodResolver(
-    formFieldsSchema.extend({ attributes: templates[template].attributesSchema })
-  );
-
   const methods = useForm({
-    resolver,
+    resolver: zodResolver(formFieldsSchema),
     defaultValues: {
       title: existingItem?.title ?? "",
       description: existingItem?.description ?? "",
       category: existingItem?.category ?? "",
       value: existingItem?.value ?? undefined,
       outboundUrl: existingItem?.outboundUrl ?? "",
-      attributes:
-        (existingItem?.attributes as Record<string, unknown>) ??
-        (template === "custom" ? { fields: [] } : {}),
+      attributes: (existingItem?.attributes as { fields: { label: string; value: string }[] }) ?? {
+        fields: [],
+      },
     },
   });
 
@@ -157,6 +170,8 @@ export function ItemForm({
     }
   });
 
+  const valueLabel = valueFieldLabel(valueDisplayMode, valueCurrency);
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={onSubmit} className="flex flex-col gap-6">
@@ -193,7 +208,7 @@ export function ItemForm({
 
           <div className="flex flex-col gap-1">
             <label htmlFor="value" className="text-sm font-medium">
-              Price (optional)
+              {valueLabel} (optional)
             </label>
             <input
               id="value"
@@ -214,6 +229,15 @@ export function ItemForm({
               onChange={setPrimaryImage}
             />
           </div>
+
+          <div className="lg:col-span-2">
+            <ImagePicker
+              label="Hover photo (optional)"
+              helperText="Shown on ~500ms hover as a second angle."
+              value={hoverImage}
+              onChange={setHoverImage}
+            />
+          </div>
         </div>
 
         <button
@@ -221,12 +245,12 @@ export function ItemForm({
           onClick={() => setShowDetails((v) => !v)}
           className="self-start text-sm font-medium underline"
         >
-          {showDetails ? "− Hide extra details" : "+ Add more details"}
+          {showDetails ? "− Hide details" : "+ Details"}
         </button>
 
         {showDetails && (
-          <div className="grid grid-cols-1 gap-6 rounded border border-neutral-200 p-4 lg:grid-cols-2">
-            <div className="flex flex-col gap-1 lg:col-span-2">
+          <div className="flex flex-col gap-6 rounded border border-neutral-200 p-4">
+            <div className="flex flex-col gap-1">
               <label htmlFor="description" className="text-sm font-medium">
                 Description
               </label>
@@ -256,23 +280,7 @@ export function ItemForm({
               )}
             </div>
 
-            <ImagePicker
-              label="Hover photo (optional)"
-              helperText="Shown on ~500ms hover as a second angle."
-              value={hoverImage}
-              onChange={setHoverImage}
-            />
-
-            {template === "wardrobe" && (
-              <div className="lg:col-span-2">
-                <WardrobeFields />
-              </div>
-            )}
-            {template === "custom" && (
-              <div className="lg:col-span-2">
-                <CustomFields />
-              </div>
-            )}
+            <CustomFields />
           </div>
         )}
 
