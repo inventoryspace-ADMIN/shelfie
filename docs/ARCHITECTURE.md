@@ -114,7 +114,9 @@ should split.
 | `/dashboard/[spaceId]` | Item manager for one space | That space's owner only |
 | `/dashboard/[spaceId]/theme` | Theme customiser | That space's owner only |
 | `/dashboard/[spaceId]/settings` | Slug, value display, publish toggle | That space's owner only |
-| `/{username}/{slug}` | **The public space page** — the thing that goes in a bio | Everyone, if `status = 'published'`; 404 otherwise (even for the owner viewing it logged out — they see it via the dashboard preview instead) |
+| `/{username}` | Owner's profile — redirects straight to their space if they have exactly one published, otherwise lists their published spaces | Everyone if at least one published space exists; 404 otherwise. `noindex` by default (see Roadmap Phase 5) |
+| `/{username}/{slug}` | **The public space page** — the thing that goes in a bio | Everyone, if `status = 'published'`; 404 otherwise (even for the owner viewing it logged out — they see it via the dashboard preview instead). `noindex` by default |
+| `/{username}/{slug}/{itemId}` | Enlarged per-item detail view, real URL rather than a modal — so "where'd you get that hoodie" is a link, not just a screenshot | Same visibility rule as its parent space. Inherits the space's OG image/meta rather than generating its own |
 | `/{username}/{slug}/opengraph-image` | Generated share image (not visited by humans — fetched by link-preview crawlers) | Everyone |
 | `/r/{itemId}` | No UI — logs a click, then 302-redirects to the item's `outbound_url` | Everyone (this is the link that's actually placed on the public page, never the raw `outbound_url`) |
 

@@ -74,7 +74,14 @@ and delete it. This is the phase where the product stops being abstract.
 *Goal: the actual shareable thing. This is what goes in your bio.*
 
 - `/{username}/{slug}` public page — Server Component, grid layout,
-  floating item cards, hover-swap interaction.
+  floating item cards, hover-swap interaction. No site nav/header wrapper
+  around it — the space is the point, not a page inside "the Shelfie
+  site." Same for the two new routes below.
+- `/{username}` profile page — redirects straight to the single published
+  space if there's only one; lists published spaces (name + link) if
+  there are several; 404s if there are none. Solves the actual "one link
+  in a bio" problem for multi-space accounts, which had no single URL to
+  point to before this.
 - Category filter bar above the grid — "All" plus one button per distinct
   `category` value present in that space (e.g. Tops, Bottoms, Denim,
   Footwear). Moved here from Phase 7 at your request — text *search*
@@ -84,8 +91,27 @@ and delete it. This is the phase where the product stops being abstract.
   hover cross-fades to the second angle, as already built. **Touch** — tap
   cross-fades to the second angle; a further tap (or hold — exact gesture
   to be finalized here, not guessed at now) opens an enlarged view with
-  the item's full details. That enlarged/detail view doesn't exist yet in
-  any form — designing it is part of this phase, not an assumption.
+  the item's full details, now at a real URL: `/{username}/{slug}/{itemId}`,
+  not a modal with nothing to share. Inherits the parent space's OG
+  image/meta rather than generating a dedicated one per item — see
+  post-launch list for a full per-item OG image later.
+- Owner info on the space page: display name only, plus a link to
+  `/{username}` when the owner has more than one published space (nothing
+  to cross-link to otherwise). Avatar/bio deliberately not built now —
+  `profiles` has no columns for either yet, and that's real schema plus
+  an upload flow, not a small add — see post-launch list.
+- "Copy link" button on the dashboard's space page, live once published —
+  the single most important action in the product, easy to forget.
+- Every public page (space, profile, item) sends `noindex` by default.
+  Personal possessions, sometimes with prices attached, are a genuinely
+  different privacy case than a typical unlisted page — the product
+  doesn't need search-engine discovery to work, since sharing here is
+  always deliberate. A per-space opt-in toggle is a later settings-page
+  addition, not a Phase 5 concern.
+- Quiet "Made with Shelfie" credit line at the bottom of the public space
+  page, linking to `/` — small, doesn't compete visually with the owner's
+  items, this is the growth loop since every shared-link visitor is a
+  potential new owner.
 - Publish/unpublish toggle in the dashboard.
 - `opengraph-image.tsx` — generated share card via `@vercel/og`.
 - Full meta tag set (title, description, OG image, Twitter card) on the
@@ -173,6 +199,18 @@ every item checked, plus Lighthouse scores pasted in.
 *Goal: shelfie.app's own front door — explain what it is, one obvious way
 in. Added after Phase 0 planning, at your request.*
 
+This is the marketing front door specifically — the page someone sees
+when they hear about Shelfie directly rather than arriving via a shared
+space link. Distinct from every public space page, which stays wrapped
+in nothing but the owner's own items (see Phase 5): the landing page is
+a separate destination, never a wrapper around a space.
+
+Explicitly **not** a quick afterthought bolted on at the end — per your
+instruction, this needs real design investment as its own piece of work,
+on the same level of care as the item card or the theme system, since
+it's the page that has to sell the idea in a few seconds to someone with
+zero context.
+
 - Replace the current bare placeholder homepage (`app/page.tsx`, live
   since Phase 1) with a real one: what Shelfie is, who it's for, a couple
   of the use cases (wardrobe, garage, golf bag...), and one clear, centered
@@ -181,7 +219,8 @@ in. Added after Phase 0 planning, at your request.*
   published space to reference/screenshot — a landing page written before
   Phase 5 would be describing a product nobody can see yet.
 - Still governed by the same design system as everything else — no new
-  one-off styling introduced just for this page.
+  one-off styling introduced just for this page — but that's a floor, not
+  a ceiling: "genuinely impressive" is the actual bar, not just "on-brand."
 
 **Definition of done:** a stranger with no context can land on
 shelfie.app, understand what it is within a few seconds, and find the
@@ -229,6 +268,22 @@ These are real, and worth planning around, but starting them before Phase
   in the grid. Must stay opt-in — some owners will want a piece to
   deliberately stand out bigger, so this can never be forced or
   default-on. Not designed yet, just recorded.
+- **Owner avatar and bio** on the public profile/space pages. Needs new
+  `profiles` columns plus an image-upload flow — deliberately not rushed
+  into Phase 5, where owner info stays limited to display name (see
+  Phase 5's routing decisions).
+- **Per-item custom OG images.** Item pages (`/{username}/{slug}/{itemId}`,
+  added in Phase 5) inherit their parent space's OG image at launch;
+  generating a dedicated one per item is real added `@vercel/og` work,
+  worth doing once per-item links prove out.
+- **Per-space SEO indexability toggle.** Every public page defaults to
+  `noindex` from Phase 5 on, deliberately (see that phase's reasoning) —
+  this is the later opt-in, living on the settings page once it exists.
+- **Pretty per-item URL slugs**, replacing the raw item ID Phase 5 ships
+  with in `/{username}/{slug}/{itemId}`. Needs a per-item slug column and
+  a uniqueness/regeneration strategy (item titles aren't unique the way
+  space slugs are) — real, just not urgent enough to block per-item URLs
+  existing at all.
 - **Custom domains** per space (currently: free `*.vercel.app` subdomain
   only, per your decision).
 - **Analytics trend view** (clicks over time), if simple counts turn out
