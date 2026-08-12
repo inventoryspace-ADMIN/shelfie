@@ -4,7 +4,7 @@ You said timeline can flex — up to 6 months if it's going well — but you
 want something real to show in 6 weeks. This roadmap is built around that:
 **Phases 1–5 are the 6-week milestone.** By the end of Phase 5 you'll have
 a real account, a real published space, real items with photos, and a link
-you can paste into Instagram that shows a proper preview card. Phases 6–10
+you can paste into Instagram that shows a proper preview card. Phases 6–11
 are the polish and power features that turn that into a launchable product
 over the following months.
 
@@ -142,7 +142,25 @@ one page tested in Phase 5.*
 **Definition of done:** a written checklist (this section, filled in) with
 every item checked, plus Lighthouse scores pasted in.
 
-## Phase 10 — Launch
+## Phase 10 — Landing page
+*Goal: shelfie.app's own front door — explain what it is, one obvious way
+in. Added after Phase 0 planning, at your request.*
+
+- Replace the current bare placeholder homepage (`app/page.tsx`, live
+  since Phase 1) with a real one: what Shelfie is, who it's for, a couple
+  of the use cases (wardrobe, garage, golf bag...), and one clear, centered
+  call-to-action button into sign-up.
+- Scheduled here rather than earlier because by this point there's a real
+  published space to reference/screenshot — a landing page written before
+  Phase 5 would be describing a product nobody can see yet.
+- Still governed by the same design system as everything else — no new
+  one-off styling introduced just for this page.
+
+**Definition of done:** a stranger with no context can land on
+shelfie.app, understand what it is within a few seconds, and find the
+button to start their own space without hunting for it.
+
+## Phase 11 — Launch
 *Goal: ship it.*
 
 - Final QA pass across sign-up → create space → add items → publish →
@@ -157,7 +175,7 @@ every item checked, plus Lighthouse scores pasted in.
 ## Explicitly post-launch (6-month horizon, not scheduled yet)
 
 These are real, and worth planning around, but starting them before Phase
-10 is exactly the kind of scope creep your brief asked me to resist:
+11 is exactly the kind of scope creep your brief asked me to resist:
 
 - **More templates** — Garage, Golf Bag, Art Collection, Sneakers. Each is
   a contained addition (one Zod schema + registry entry) once the pattern
