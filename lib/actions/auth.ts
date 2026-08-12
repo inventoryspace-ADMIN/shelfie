@@ -72,6 +72,11 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
+    if (error.code === "email_not_confirmed") {
+      return {
+        error: "Please confirm your email first — check your inbox for the confirmation link.",
+      };
+    }
     return { error: "Incorrect email or password." };
   }
 
