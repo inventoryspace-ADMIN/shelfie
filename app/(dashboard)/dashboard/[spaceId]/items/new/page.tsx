@@ -1,0 +1,48 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { ItemForm } from "@/components/dashboard/ItemForm";
+import type { TemplateKey } from "@/lib/templates";
+
+export default async function NewItemPage({
+  params,
+}: {
+  params: Promise<{ spaceId: string }>;
+}) {
+  const { spaceId } = await params;
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/sign-in");
+
+  const { data: space } = await supabase
+    .from("spaces")
+    .select("id, name, template, owner_id")
+    .eq("id", spaceId)
+    .single();
+
+  if (!space || space.owner_id !== user.id) {
+    notFound();
+  }
+
+  return (
+    <main className="mx-auto flex min-h-screen max-w-sm flex-col gap-6 p-8">
+      <div>
+        <Link
+          href={`/dashboard/${spaceId}`}
+          className="text-sm text-neutral-500 underline"
+        >
+          ← Back to {space.name}
+        </Link>
+        <h1 className="mt-2 text-2xl font-medium tracking-wide">Add item</h1>
+      </div>
+      <ItemForm
+        spaceId={space.id}
+        ownerId={user.id}
+        template={space.template as TemplateKey}
+      />
+    </main>
+  );
+}

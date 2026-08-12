@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      items: {
+        Row: {
+          attributes: Json
+          category: string | null
+          created_at: string
+          description: string | null
+          hover_image_path: string | null
+          id: string
+          outbound_url: string | null
+          primary_image_path: string
+          sort_order: number
+          space_id: string
+          title: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          attributes?: Json
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          hover_image_path?: string | null
+          id?: string
+          outbound_url?: string | null
+          primary_image_path: string
+          sort_order?: number
+          space_id: string
+          title: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          attributes?: Json
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          hover_image_path?: string | null
+          id?: string
+          outbound_url?: string | null
+          primary_image_path?: string
+          sort_order?: number
+          space_id?: string
+          title?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

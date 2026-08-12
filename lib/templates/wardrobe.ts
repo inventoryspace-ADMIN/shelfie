@@ -4,9 +4,9 @@ import { z } from "zod";
 // template = 'wardrobe'. `value` (price paid) and `category` live as
 // top-level columns on `items` — see docs/SCHEMA.md.
 export const wardrobeAttributesSchema = z.object({
-  brand: z.string().max(50).optional(),
-  size: z.string().max(20).optional(),
-  whereBought: z.string().max(100).optional(),
+  brand: z.string().max(50).optional().or(z.literal("")),
+  size: z.string().max(20).optional().or(z.literal("")),
+  whereBought: z.string().max(100).optional().or(z.literal("")),
   condition: z.enum(["new", "like-new", "good", "worn"]).optional(),
 });
 
