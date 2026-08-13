@@ -50,22 +50,17 @@ export default async function SpacePage({
       </Link>
 
       <div className="flex flex-col items-center gap-2 text-center">
-        <div className="flex items-center gap-2">
-          <EditableSpaceName spaceId={space.id} initialName={space.name} />
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              space.status === "published"
-                ? "bg-green-100 text-green-800"
-                : "bg-neutral-100 text-neutral-600"
-            }`}
-          >
-            {space.status}
-          </span>
-        </div>
+        <EditableSpaceName spaceId={space.id} initialName={space.name} />
         <p className="text-sm text-neutral-500">
           {templates[space.template as keyof typeof templates]?.label ??
             space.template}{" "}
           · /{space.slug}
+          {space.status === "draft" && (
+            <>
+              {" "}
+              · <span className="font-medium text-neutral-600">Draft</span>
+            </>
+          )}
         </p>
       </div>
 
