@@ -147,6 +147,18 @@ export async function removeBackground(
     tryEnqueue(x, y + 1);
   }
 
+  // TEMPORARY debug instrumentation — remove once the black-outline bug is
+  // confirmed fixed. Answers "is the feather/defringe pass even reaching
+  // these pixels, and if so, why isn't it correcting them enough."
+  console.log("[removeBackground debug] sampled background color:", {
+    r: Math.round(bgR),
+    g: Math.round(bgG),
+    b: Math.round(bgB),
+  });
+  console.log(
+    `[removeBackground debug] primary fill removed ${queueEnd} / ${width * height} pixels (threshold ${threshold})`
+  );
+
   // Soften the hard flood-fill boundary, and defringe it. A pixel right at
   // the edge of the removed region is usually a color *blend* of the item
   // and the original background (ordinary photo antialiasing, or blur from
@@ -190,6 +202,16 @@ export async function removeBackground(
     }
   }
 
+  // TEMPORARY debug instrumentation, see note above.
+  const immediateSeedCount = featherEnd;
+  let featherAccepted = 0;
+  let featherSnappedZero = 0;
+  let featherRecolored = 0;
+  let featherRejected = 0;
+  let rejectedDistSum = 0;
+  let rejectedDistMin = Infinity;
+  let rejectedDistMax = -Infinity;
+
   let featherStart = 0;
   while (featherStart < featherEnd) {
     const idx = featherQueue[featherStart++];
@@ -202,17 +224,26 @@ export async function removeBackground(
       bgG,
       bgB
     );
-    if (distance > looseThreshold) continue; // reached genuine item color — stop here
+    if (distance > looseThreshold) {
+      // reached genuine item color — stop here
+      featherRejected++;
+      rejectedDistSum += distance;
+      if (distance < rejectedDistMin) rejectedDistMin = distance;
+      if (distance > rejectedDistMax) rejectedDistMax = distance;
+      continue;
+    }
 
     const alphaRatio = Math.max(
       0,
       Math.min(1, (distance - threshold) / FEATHER_WIDTH)
     );
+    featherAccepted++;
     if (alphaRatio < 0.12) {
       // Close enough to pure background that keeping a sliver of it visible
       // does more harm (a faint but noisy-colored speck — see the division
       // below) than good. Treat it as fully removed instead.
       data[i + 3] = 0;
+      featherSnappedZero++;
     } else {
       data[i + 3] = Math.round(alphaRatio * 255);
       // Un-blend: observed = alphaRatio*trueColor + (1-alphaRatio)*bgColor.
@@ -223,6 +254,7 @@ export async function removeBackground(
       data[i + 2] = clampByte(
         (data[i + 2] - (1 - alphaRatio) * bgB) / alphaRatio
       );
+      featherRecolored++;
     }
 
     const x = idx % width;
@@ -238,6 +270,19 @@ export async function removeBackground(
     tryEnqueueFeather(x + 1, y);
     tryEnqueueFeather(x, y - 1);
     tryEnqueueFeather(x, y + 1);
+  }
+
+  // TEMPORARY debug instrumentation, see note above.
+  console.log(
+    `[removeBackground debug] feather pass: ${immediateSeedCount} pixels touched the removed region directly, ${featherEnd} considered in total once the pass expanded`
+  );
+  console.log(
+    `[removeBackground debug] feather pass: accepted ${featherAccepted} (snapped fully transparent: ${featherSnappedZero}, recolored: ${featherRecolored}) — rejected ${featherRejected} as too far from the sampled background (loose threshold ${looseThreshold})`
+  );
+  if (featherRejected > 0) {
+    console.log(
+      `[removeBackground debug] rejected pixels' distance from sampled background — min ${rejectedDistMin.toFixed(1)}, avg ${(rejectedDistSum / featherRejected).toFixed(1)}, max ${rejectedDistMax.toFixed(1)}`
+    );
   }
 
   // Crop to the item's actual bounding box (any pixel left with meaningful
