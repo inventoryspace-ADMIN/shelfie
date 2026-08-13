@@ -82,7 +82,7 @@ export function EditableSpaceName({
   }
 
   return (
-    <div className="group inline-flex items-center gap-1.5">
+    <div className="group relative inline-flex items-center">
       <h1
         onDoubleClick={startEditing}
         onClick={() => {
@@ -95,11 +95,14 @@ export function EditableSpaceName({
       >
         {name}
       </h1>
+      {/* Absolutely positioned so the icon hangs off the title instead of
+          widening the centered box — otherwise the title+icon group gets
+          centered as a unit and the title text sits off true center. */}
       <button
         type="button"
         onClick={startEditing}
         aria-label="Edit space name"
-        className="rounded p-1 text-neutral-400 opacity-0 transition-opacity hover:text-neutral-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 group-hover:opacity-100"
+        className="absolute left-full ml-1.5 rounded p-1 text-neutral-400 opacity-0 transition-opacity hover:text-neutral-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 group-hover:opacity-100"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
