@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { templates } from "@/lib/templates";
-import { RenameSpaceForm } from "@/components/dashboard/RenameSpaceForm";
+import { EditableSpaceName } from "@/components/dashboard/EditableSpaceName";
 import { ItemCard } from "@/components/space/ItemCard";
 import { DeleteItemButton } from "@/components/dashboard/DeleteItemButton";
 
@@ -51,7 +51,7 @@ export default async function SpacePage({
 
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-medium tracking-wide">{space.name}</h1>
+          <EditableSpaceName spaceId={space.id} initialName={space.name} />
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
               space.status === "published"
@@ -67,10 +67,6 @@ export default async function SpacePage({
             space.template}{" "}
           · /{space.slug}
         </p>
-      </div>
-
-      <div className="mx-auto w-full max-w-sm">
-        <RenameSpaceForm spaceId={space.id} initialName={space.name} />
       </div>
 
       <div className="flex justify-center">
