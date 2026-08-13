@@ -123,6 +123,21 @@ runtime request to Google — good for both performance and privacy).
 it would need two accent-contrast passes and two OG-image variants per
 space. Worth adding post-launch, not before.)*
 
+**Idea logged for Phase 6 scoping, not decided:** a custom-image background
+option (owner uploads their own photo/texture as the space background,
+instead of picking one of the 4 curated treatments above). Requested for
+future consideration — needs real thought before building, not just
+adding an upload field, because it's a different kind of escape hatch
+than a raw hex picker or free CSS but raises the same underlying risk:
+the 14 accent colors are contrast-checked against these 4 known
+backgrounds specifically (see Accessibility baseline below), and an
+arbitrary owner-uploaded image has no guaranteed contrast or brightness
+at all. Whatever shape this takes — a curated set of backgrounds with an
+overlay/scrim to guarantee text contrast, a brightness check that warns
+or auto-adjusts foreground color, cropping/positioning controls — it
+needs to preserve "an owner cannot produce an ugly or broken page no
+matter what they pick," not just bolt an upload button onto this axis.
+
 ### 4. Card shape — how the floating image container reads
 
 | Key | Description |

@@ -42,6 +42,10 @@ function colorDistance(
   return Math.sqrt(dr * dr + dg * dg + db * db);
 }
 
+function clampByte(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
 export function isBackgroundRemovalSupported(): boolean {
   return (
     typeof document !== "undefined" &&
@@ -143,41 +147,97 @@ export async function removeBackground(
     tryEnqueue(x, y + 1);
   }
 
-  // Soften the hard flood-fill boundary: a pixel right at the edge of the
-  // removed region is often a color *blend* of the item and the original
-  // background (ordinary photo antialiasing), not one or the other. Left
-  // fully opaque, that blend shows up as a faint background-colored fringe
-  // around the item. Fade those specific edge pixels toward transparent
-  // instead of leaving them hard-cut.
+  // Soften the hard flood-fill boundary, and defringe it. A pixel right at
+  // the edge of the removed region is usually a color *blend* of the item
+  // and the original background (ordinary photo antialiasing, or blur from
+  // the MAX_DIMENSION downscale above) — not cleanly one or the other, and
+  // that blend can be several pixels wide, not just one. This is a second
+  // flood fill, seeded from the boundary of the region already removed
+  // above, using a looser color threshold. Same connectivity-respecting
+  // design as the primary fill (it can only extend outward from pixels
+  // already known to be background, never jump into a same-colored patch
+  // in the middle of the item), so it correctly follows a blend band of
+  // any width instead of only ever reaching one pixel deep — which is what
+  // previously left a ring of un-softened, background-tinted pixels around
+  // items shot against a strong background color (reported as a dark
+  // outline on a black-background photo).
+  //
+  // Softening alpha alone isn't enough, though: a pixel that's 60%
+  // background/40% item still *stores* that background-tinted color, so at
+  // 40% opacity it still reads as a grey/dark fringe once composited onto a
+  // page background that isn't the original photo's background (Photoshop
+  // calls this "matte" fringing). So each pixel here also gets its RGB
+  // corrected — un-blended against the sampled background color — to
+  // recover the item's actual color, the same idea as Photoshop's
+  // Defringe/Remove Black Matte.
+  const looseThreshold = threshold + FEATHER_WIDTH;
+  const featherQueue = new Int32Array(width * height);
+  let featherEnd = 0;
+  const inFeatherQueue = new Uint8Array(width * height);
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = y * width + x;
-      if (visited[idx]) continue;
-
+      if (visited[idx] || inFeatherQueue[idx]) continue;
       const touchesRemoved =
         (x > 0 && visited[idx - 1]) ||
         (x < width - 1 && visited[idx + 1]) ||
         (y > 0 && visited[idx - width]) ||
         (y < height - 1 && visited[idx + width]);
       if (!touchesRemoved) continue;
-
-      const i = idx * 4;
-      const distance = colorDistance(
-        data[i],
-        data[i + 1],
-        data[i + 2],
-        bgR,
-        bgG,
-        bgB
-      );
-      if (distance < threshold + FEATHER_WIDTH) {
-        const alphaRatio = Math.max(
-          0,
-          Math.min(1, (distance - threshold) / FEATHER_WIDTH)
-        );
-        data[i + 3] = Math.round(alphaRatio * 255);
-      }
+      inFeatherQueue[idx] = 1;
+      featherQueue[featherEnd++] = idx;
     }
+  }
+
+  let featherStart = 0;
+  while (featherStart < featherEnd) {
+    const idx = featherQueue[featherStart++];
+    const i = idx * 4;
+    const distance = colorDistance(
+      data[i],
+      data[i + 1],
+      data[i + 2],
+      bgR,
+      bgG,
+      bgB
+    );
+    if (distance > looseThreshold) continue; // reached genuine item color — stop here
+
+    const alphaRatio = Math.max(
+      0,
+      Math.min(1, (distance - threshold) / FEATHER_WIDTH)
+    );
+    if (alphaRatio < 0.12) {
+      // Close enough to pure background that keeping a sliver of it visible
+      // does more harm (a faint but noisy-colored speck — see the division
+      // below) than good. Treat it as fully removed instead.
+      data[i + 3] = 0;
+    } else {
+      data[i + 3] = Math.round(alphaRatio * 255);
+      // Un-blend: observed = alphaRatio*trueColor + (1-alphaRatio)*bgColor.
+      data[i] = clampByte((data[i] - (1 - alphaRatio) * bgR) / alphaRatio);
+      data[i + 1] = clampByte(
+        (data[i + 1] - (1 - alphaRatio) * bgG) / alphaRatio
+      );
+      data[i + 2] = clampByte(
+        (data[i + 2] - (1 - alphaRatio) * bgB) / alphaRatio
+      );
+    }
+
+    const x = idx % width;
+    const y = Math.floor(idx / width);
+    const tryEnqueueFeather = (nx: number, ny: number) => {
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) return;
+      const nIdx = ny * width + nx;
+      if (visited[nIdx] || inFeatherQueue[nIdx]) return;
+      inFeatherQueue[nIdx] = 1;
+      featherQueue[featherEnd++] = nIdx;
+    };
+    tryEnqueueFeather(x - 1, y);
+    tryEnqueueFeather(x + 1, y);
+    tryEnqueueFeather(x, y - 1);
+    tryEnqueueFeather(x, y + 1);
   }
 
   // Crop to the item's actual bounding box (any pixel left with meaningful
