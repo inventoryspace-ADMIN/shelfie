@@ -44,7 +44,7 @@ export function ItemCard({
             aria-hidden
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-contain opacity-0 transition-opacity delay-500 duration-300 group-hover:opacity-100"
+            className="object-contain opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:delay-500"
           />
         )}
       </div>
