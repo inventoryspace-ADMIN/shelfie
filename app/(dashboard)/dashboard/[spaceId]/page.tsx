@@ -5,6 +5,7 @@ import { templates } from "@/lib/templates";
 import { EditableSpaceName } from "@/components/dashboard/EditableSpaceName";
 import { ItemCard } from "@/components/space/ItemCard";
 import { DeleteItemButton } from "@/components/dashboard/DeleteItemButton";
+import { withCacheBust } from "@/lib/images/uploadItemImage";
 
 export default async function SpacePage({
   params,
@@ -37,7 +38,9 @@ export default async function SpacePage({
 
   const { data: items } = await supabase
     .from("items")
-    .select("id, title, category, value, primary_image_path, hover_image_path")
+    .select(
+      "id, title, category, value, primary_image_path, hover_image_path, updated_at"
+    )
     .eq("space_id", spaceId)
     .order("sort_order", { ascending: true });
 
@@ -85,12 +88,17 @@ export default async function SpacePage({
                   title: item.title,
                   category: item.category,
                   value: item.value,
-                  primaryImageUrl: bucket.getPublicUrl(
-                    item.primary_image_path
-                  ).data.publicUrl,
+                  primaryImageUrl: withCacheBust(
+                    bucket.getPublicUrl(item.primary_image_path).data
+                      .publicUrl,
+                    item.updated_at
+                  ),
                   hoverImageUrl: item.hover_image_path
-                    ? bucket.getPublicUrl(item.hover_image_path).data
-                        .publicUrl
+                    ? withCacheBust(
+                        bucket.getPublicUrl(item.hover_image_path).data
+                          .publicUrl,
+                        item.updated_at
+                      )
                     : null,
                 }}
                 valueLabel={item.value != null ? String(item.value) : null}

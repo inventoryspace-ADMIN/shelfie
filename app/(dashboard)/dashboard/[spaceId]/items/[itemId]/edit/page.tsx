@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ItemForm } from "@/components/dashboard/ItemForm";
+import { withCacheBust } from "@/lib/images/uploadItemImage";
 
 export default async function EditItemPage({
   params,
@@ -29,7 +30,7 @@ export default async function EditItemPage({
   const { data: item } = await supabase
     .from("items")
     .select(
-      "id, title, description, category, value, outbound_url, primary_image_path, hover_image_path, attributes"
+      "id, title, description, category, value, outbound_url, primary_image_path, hover_image_path, attributes, updated_at"
     )
     .eq("id", itemId)
     .eq("space_id", spaceId)
@@ -68,10 +69,15 @@ export default async function EditItemPage({
           outboundUrl: item.outbound_url,
           primaryImagePath: item.primary_image_path,
           hoverImagePath: item.hover_image_path,
-          primaryImageUrl: bucket.getPublicUrl(item.primary_image_path).data
-            .publicUrl,
+          primaryImageUrl: withCacheBust(
+            bucket.getPublicUrl(item.primary_image_path).data.publicUrl,
+            item.updated_at
+          ),
           hoverImageUrl: item.hover_image_path
-            ? bucket.getPublicUrl(item.hover_image_path).data.publicUrl
+            ? withCacheBust(
+                bucket.getPublicUrl(item.hover_image_path).data.publicUrl,
+                item.updated_at
+              )
             : null,
           attributes: item.attributes,
         }}
