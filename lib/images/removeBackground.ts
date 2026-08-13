@@ -102,6 +102,26 @@ export async function removeBackground(
   const bgG = sumG / borderCount;
   const bgB = sumB / borderCount;
 
+  // How much does the background actually vary across this specific photo
+  // (grain, a slight vignette, compression noise), versus a perfectly flat
+  // color? A second pass over the same border pixels, measuring their
+  // spread around the mean just computed above.
+  let varianceSum = 0;
+  const addVarianceSample = (x: number, y: number) => {
+    const i = (y * width + x) * 4;
+    const d = colorDistance(data[i], data[i + 1], data[i + 2], bgR, bgG, bgB);
+    varianceSum += d * d;
+  };
+  for (let x = 0; x < width; x++) {
+    addVarianceSample(x, 0);
+    addVarianceSample(x, height - 1);
+  }
+  for (let y = 0; y < height; y++) {
+    addVarianceSample(0, y);
+    addVarianceSample(width - 1, y);
+  }
+  const bgStdDev = Math.sqrt(varianceSum / borderCount);
+
   // Flood fill from every border pixel, 4-connected, marking pixels
   // within `threshold` of the sampled background color as transparent.
   const visited = new Uint8Array(width * height);
@@ -154,6 +174,7 @@ export async function removeBackground(
     r: Math.round(bgR),
     g: Math.round(bgG),
     b: Math.round(bgB),
+    stdDev: bgStdDev.toFixed(1),
   });
   console.log(
     `[removeBackground debug] primary fill removed ${queueEnd} / ${width * height} pixels (threshold ${threshold})`
@@ -182,7 +203,21 @@ export async function removeBackground(
   // corrected — un-blended against the sampled background color — to
   // recover the item's actual color, the same idea as Photoshop's
   // Defringe/Remove Black Matte.
-  const looseThreshold = threshold + FEATHER_WIDTH;
+  //
+  // How far this pass is willing to travel (in color-distance) scales with
+  // how noisy this specific photo's background actually is (bgStdDev,
+  // measured above) rather than a single fixed number for every photo. A
+  // clean, flat background keeps the same tight FEATHER_WIDTH as before
+  // (and the same protection for genuinely dark trim right at an item's
+  // edge); a background with real grain/vignette/compression noise gets a
+  // wider allowance, sized to that noise rather than guessed — this is
+  // what a fixed threshold got visibly wrong on a black backdrop with a
+  // few percent of natural variation in it (confirmed via the debug
+  // logging below: rejected pixels clustered right at the old fixed
+  // cutoff).
+  const STDDEV_MULTIPLIER = 3;
+  const looseThreshold =
+    threshold + Math.max(FEATHER_WIDTH, bgStdDev * STDDEV_MULTIPLIER);
   const featherQueue = new Int32Array(width * height);
   let featherEnd = 0;
   const inFeatherQueue = new Uint8Array(width * height);
