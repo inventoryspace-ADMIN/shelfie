@@ -12,9 +12,12 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 // How far one click of "Remove more" / "Remove less" nudges the removal
 // tolerance, and the range it's clamped to. No slider, no raw number shown
-// to the owner — see ImagePicker's use of these below.
-const THRESHOLD_STEP = 15;
-const MIN_THRESHOLD = 15;
+// to the owner — see ImagePicker's use of these below. Step is smaller than
+// the gap from DEFAULT_THRESHOLD down to MIN_THRESHOLD on purpose, so
+// "Remove less" has more than a couple of clicks' worth of room on a photo
+// that needs several nudges before the fill stops eating into the item.
+const THRESHOLD_STEP = 10;
+const MIN_THRESHOLD = 5;
 const MAX_THRESHOLD = 150;
 
 export function ImagePicker({
@@ -191,6 +194,11 @@ export function ImagePicker({
                     type="button"
                     onClick={handleRemoveLess}
                     disabled={isProcessing || threshold <= MIN_THRESHOLD}
+                    title={
+                      threshold <= MIN_THRESHOLD
+                        ? "Already as gentle as this can go"
+                        : undefined
+                    }
                     className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
                   >
                     Remove less
@@ -199,6 +207,11 @@ export function ImagePicker({
                     type="button"
                     onClick={handleRemoveMore}
                     disabled={isProcessing || threshold >= MAX_THRESHOLD}
+                    title={
+                      threshold >= MAX_THRESHOLD
+                        ? "Already as aggressive as this can go"
+                        : undefined
+                    }
                     className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
                   >
                     Remove more
