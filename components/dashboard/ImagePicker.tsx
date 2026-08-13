@@ -24,16 +24,14 @@ export function ImagePicker({
   const [isProcessing, setIsProcessing] = useState(false);
   const [backgroundRemoved, setBackgroundRemoved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const loadFile = (file: File) => {
     setError(null);
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Please upload a PNG, JPG, or WebP image.");
+      setError("Please use a PNG, JPG, or WebP image.");
       return;
     }
     if (file.size > MAX_SIZE) {
@@ -50,6 +48,28 @@ export function ImagePicker({
     };
     reader.onerror = () => setError("Error reading file. Please try again.");
     reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) loadFile(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const imageItem = Array.from(e.clipboardData.items).find((item) =>
+      item.type.startsWith("image/")
+    );
+    const file = imageItem?.getAsFile();
+    if (!file) return;
+    e.preventDefault();
+    loadFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) loadFile(file);
   };
 
   const handleRemoveBackground = async () => {
@@ -85,9 +105,26 @@ export function ImagePicker({
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium">{label}</span>
       {helperText && <p className="text-xs text-neutral-500">{helperText}</p>}
+      <p className="text-xs text-neutral-400">
+        Click the preview, then paste an image (⌘V / Ctrl+V) — or drag one
+        in.
+      </p>
 
       <div className="flex items-start gap-3">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded border border-neutral-300 bg-[repeating-conic-gradient(#e5e5e5_0%_25%,white_0%_50%)] bg-[length:16px_16px]">
+        <div
+          tabIndex={0}
+          onPaste={handlePaste}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragOver(true);
+          }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
+          aria-label="Image preview — click, then paste or drop an image here"
+          className={`flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded border bg-[repeating-conic-gradient(#e5e5e5_0%_25%,white_0%_50%)] bg-[length:16px_16px] focus:outline-none focus:ring-2 focus:ring-neutral-400 ${
+            isDragOver ? "border-2 border-neutral-900" : "border-neutral-300"
+          }`}
+        >
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element -- local data: URL preview, not an optimizable remote image
             <img
@@ -96,7 +133,9 @@ export function ImagePicker({
               className="h-full w-full object-contain"
             />
           ) : (
-            <span className="text-xs text-neutral-400">No image</span>
+            <span className="px-1 text-center text-[10px] text-neutral-400">
+              No image
+            </span>
           )}
         </div>
 
