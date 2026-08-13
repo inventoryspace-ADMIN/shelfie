@@ -102,6 +102,14 @@ and delete it. This is the phase where the product stops being abstract.
   an upload flow, not a small add — see post-launch list.
 - "Copy link" button on the dashboard's space page, live once published —
   the single most important action in the product, easy to forget.
+- "Preview" button on the dashboard's space page, next to Copy link —
+  opens `/{username}/{slug}` itself. No separate "preview mode" to build:
+  an owner can already see their own space regardless of draft/published
+  status (see RLS in `docs/SCHEMA.md`), and the public page never renders
+  any add/edit/delete/settings chrome in the first place — those only
+  exist on the dashboard page, a different route entirely. So opening the
+  real public page *is* seeing exactly what a visitor sees, automatically,
+  with zero extra logic.
 - Every public page (space, profile, item) sends `noindex` by default.
   Personal possessions, sometimes with prices attached, are a genuinely
   different privacy case than a typical unlisted page — the product
@@ -158,9 +166,38 @@ see an accurate preview, save, and see the public page reflect it exactly.
   hold-then-move — gets worked out here, not assumed in advance). This
   replaces the current dashboard's separate "Edit"/"Delete" text links
   below each card.
-- Text search on the public page (client-side is fine at expected
-  collection sizes — no need for a search service). Category filtering
-  itself now ships earlier, with the public page in Phase 5.
+- Replace the native browser `confirm()` dialog on item delete with
+  delete-then-undo instead: the item disappears immediately, a toast
+  reads "Item deleted — Undo" for roughly 5-8 seconds, and only once that
+  window closes with no undo does the delete become permanent — including
+  removing its images from storage, which shouldn't happen before then. A
+  confirmation seen on every delete becomes muscle memory and stops
+  protecting against the accidental deletes it exists for, while still
+  costing a click every intentional time; undo protects specifically the
+  "wasn't paying attention" case instead (same pattern as Gmail, Linear,
+  Notion). Scoped here rather than earlier because it isn't a small
+  polish swap: no toast/notification system exists in the app yet (needs
+  building, or a small justified dependency), making undo reliable means
+  deciding between delaying the actual delete (simpler, but a closed tab
+  or crash during the window means it silently never happens) versus
+  soft-deleting (`deleted_at` on `items`, filtered out of every read, a
+  purge step after the window that's also when storage images actually
+  get removed — more reliable, more moving parts: a migration, RLS, and
+  updated queries everywhere items are read), and it needs delete to have
+  a real entry point in this phase's new tap/hold gesture model once the
+  "Edit"/"Delete" text links above are gone, not assumed to still be a
+  visible link.
+- Text search — on **both** the public page (for visitors) and the
+  dashboard's item manager (for the owner, once they're managing real
+  collection sizes, not just a handful of demo items — the same "usable
+  at real sizes" goal this phase is built around applies to their own
+  editing view, not only what a visitor sees). Client-side is fine at
+  expected sizes on either page — no need for a search service. Per your
+  preference: one search box matching against both title *and* category
+  (rather than search and the Phase 5 category-filter chips staying two
+  separate controls), surfacing/promoting matches to the top of the grid
+  as you type, rather than only hiding non-matches. Category filtering
+  itself still ships earlier, with the public page in Phase 5.
 - Consider a basic "filter by a shared custom field label" control (e.g.
   every item someone tagged "Size"), per the open question logged in
   `docs/SCHEMA.md` "Template registry" — same filter-chip pattern as the
@@ -304,6 +341,12 @@ These are real, and worth planning around, but starting them before Phase
   designed yet; revisit once the plain grid from Phase 5 is live and it's
   clear which items in a real space would actually benefit from standing
   out.
+- **Multi-select and bulk delete** for items — becomes real friction once
+  a space has enough items (50+) that deleting several one at a time is
+  tedious, not before. Pairs with the delete-then-undo pattern above
+  (Phase 7): undo would need to cover "undo this whole batch," not just
+  one item, so worth building after that pattern exists rather than
+  alongside it.
 
 ---
 
