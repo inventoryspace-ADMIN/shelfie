@@ -2,12 +2,20 @@
 
 import { useRef, useState } from "react";
 import {
+  DEFAULT_THRESHOLD,
   isBackgroundRemovalSupported,
   removeBackground,
 } from "@/lib/images/removeBackground";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+// How far one click of "Remove more" / "Remove less" nudges the removal
+// tolerance, and the range it's clamped to. No slider, no raw number shown
+// to the owner — see ImagePicker's use of these below.
+const THRESHOLD_STEP = 15;
+const MIN_THRESHOLD = 15;
+const MAX_THRESHOLD = 150;
 
 export function ImagePicker({
   label,
@@ -23,6 +31,7 @@ export function ImagePicker({
   const [original, setOriginal] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [backgroundRemoved, setBackgroundRemoved] = useState(false);
+  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +53,7 @@ export function ImagePicker({
       const result = event.target?.result as string;
       setOriginal(result);
       setBackgroundRemoved(false);
+      setThreshold(DEFAULT_THRESHOLD);
       onChange(result);
     };
     reader.onerror = () => setError("Error reading file. Please try again.");
@@ -72,20 +82,36 @@ export function ImagePicker({
     if (file) loadFile(file);
   };
 
-  const handleRemoveBackground = async () => {
+  const runRemoval = async (nextThreshold: number) => {
     if (!original || isProcessing) return;
     setIsProcessing(true);
     setError(null);
     try {
-      const result = await removeBackground(original);
+      const result = await removeBackground(original, nextThreshold);
       onChange(result);
       setBackgroundRemoved(true);
+      setThreshold(nextThreshold);
     } catch {
       setError("Background removal failed — using the original image.");
     } finally {
       setIsProcessing(false);
     }
   };
+
+  const handleRemoveBackground = () => runRemoval(DEFAULT_THRESHOLD);
+
+  // For a photo where the item is close in color to its background, the
+  // default removal can eat into the item itself — "less" retries with a
+  // tighter tolerance. For a background with a gradient (studio light
+  // falloff, for example), the default can leave a ring behind — "more"
+  // retries with a looser one. Which one an owner needs depends on the
+  // specific photo, not something we can know in advance — see
+  // lib/images/removeBackground.ts for why one fixed setting can't serve
+  // both.
+  const handleRemoveMore = () =>
+    runRemoval(Math.min(MAX_THRESHOLD, threshold + THRESHOLD_STEP));
+  const handleRemoveLess = () =>
+    runRemoval(Math.max(MIN_THRESHOLD, threshold - THRESHOLD_STEP));
 
   const handleRestoreOriginal = () => {
     if (!original) return;
@@ -96,6 +122,7 @@ export function ImagePicker({
   const handleClear = () => {
     setOriginal(null);
     setBackgroundRemoved(false);
+    setThreshold(DEFAULT_THRESHOLD);
     setError(null);
     onChange(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -159,13 +186,31 @@ export function ImagePicker({
                 {isProcessing ? "Removing…" : "Remove background"}
               </button>
               {backgroundRemoved && (
-                <button
-                  type="button"
-                  onClick={handleRestoreOriginal}
-                  className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium"
-                >
-                  Restore original
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleRemoveLess}
+                    disabled={isProcessing || threshold <= MIN_THRESHOLD}
+                    className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
+                  >
+                    Remove less
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveMore}
+                    disabled={isProcessing || threshold >= MAX_THRESHOLD}
+                    className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
+                  >
+                    Remove more
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRestoreOriginal}
+                    className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium"
+                  >
+                    Restore original
+                  </button>
+                </>
               )}
               <button
                 type="button"
@@ -175,6 +220,13 @@ export function ImagePicker({
                 Clear
               </button>
             </div>
+          )}
+
+          {backgroundRemoved && (
+            <p className="text-xs text-neutral-400">
+              Edge looks cut into the item? Try &ldquo;Remove less.&rdquo;
+              Left a faint outline? Try &ldquo;Remove more.&rdquo;
+            </p>
           )}
 
           {error && <p className="text-xs text-red-600">{error}</p>}

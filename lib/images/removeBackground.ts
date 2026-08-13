@@ -14,7 +14,7 @@
 // deals with "a PNG path," never with how the transparency was produced.
 
 const MAX_DIMENSION = 1200;
-const DEFAULT_THRESHOLD = 45;
+export const DEFAULT_THRESHOLD = 45;
 const FEATHER_WIDTH = 30;
 const CROP_PADDING_RATIO = 0.04;
 
@@ -102,26 +102,6 @@ export async function removeBackground(
   const bgG = sumG / borderCount;
   const bgB = sumB / borderCount;
 
-  // How much does the background actually vary across this specific photo
-  // (grain, a slight vignette, compression noise), versus a perfectly flat
-  // color? A second pass over the same border pixels, measuring their
-  // spread around the mean just computed above.
-  let varianceSum = 0;
-  const addVarianceSample = (x: number, y: number) => {
-    const i = (y * width + x) * 4;
-    const d = colorDistance(data[i], data[i + 1], data[i + 2], bgR, bgG, bgB);
-    varianceSum += d * d;
-  };
-  for (let x = 0; x < width; x++) {
-    addVarianceSample(x, 0);
-    addVarianceSample(x, height - 1);
-  }
-  for (let y = 0; y < height; y++) {
-    addVarianceSample(0, y);
-    addVarianceSample(width - 1, y);
-  }
-  const bgStdDev = Math.sqrt(varianceSum / borderCount);
-
   // Flood fill from every border pixel, 4-connected, marking pixels
   // within `threshold` of the sampled background color as transparent.
   const visited = new Uint8Array(width * height);
@@ -167,19 +147,6 @@ export async function removeBackground(
     tryEnqueue(x, y + 1);
   }
 
-  // TEMPORARY debug instrumentation — remove once the black-outline bug is
-  // confirmed fixed. Answers "is the feather/defringe pass even reaching
-  // these pixels, and if so, why isn't it correcting them enough."
-  console.log("[removeBackground debug] sampled background color:", {
-    r: Math.round(bgR),
-    g: Math.round(bgG),
-    b: Math.round(bgB),
-    stdDev: bgStdDev.toFixed(1),
-  });
-  console.log(
-    `[removeBackground debug] primary fill removed ${queueEnd} / ${width * height} pixels (threshold ${threshold})`
-  );
-
   // Soften the hard flood-fill boundary, and defringe it. A pixel right at
   // the edge of the removed region is usually a color *blend* of the item
   // and the original background (ordinary photo antialiasing, or blur from
@@ -204,20 +171,15 @@ export async function removeBackground(
   // recover the item's actual color, the same idea as Photoshop's
   // Defringe/Remove Black Matte.
   //
-  // How far this pass is willing to travel (in color-distance) scales with
-  // how noisy this specific photo's background actually is (bgStdDev,
-  // measured above) rather than a single fixed number for every photo. A
-  // clean, flat background keeps the same tight FEATHER_WIDTH as before
-  // (and the same protection for genuinely dark trim right at an item's
-  // edge); a background with real grain/vignette/compression noise gets a
-  // wider allowance, sized to that noise rather than guessed — this is
-  // what a fixed threshold got visibly wrong on a black backdrop with a
-  // few percent of natural variation in it (confirmed via the debug
-  // logging below: rejected pixels clustered right at the old fixed
-  // cutoff).
-  const STDDEV_MULTIPLIER = 3;
-  const looseThreshold =
-    threshold + Math.max(FEATHER_WIDTH, bgStdDev * STDDEV_MULTIPLIER);
+  // `threshold` (and therefore `looseThreshold`) is caller-supplied rather
+  // than a fixed constant — see `removeBackground`'s signature. A photo
+  // with a background gradient (e.g. studio light falloff) needs a looser
+  // value to fully clear; a photo where the item is close in color to its
+  // background needs a tighter one to avoid eating into it. No single
+  // fixed number serves both, and there's no way to tell which situation a
+  // given photo is in from the pixels alone — that's what the "Remove
+  // more" / "Remove less" controls in ImagePicker are for.
+  const looseThreshold = threshold + FEATHER_WIDTH;
   const featherQueue = new Int32Array(width * height);
   let featherEnd = 0;
   const inFeatherQueue = new Uint8Array(width * height);
@@ -237,16 +199,6 @@ export async function removeBackground(
     }
   }
 
-  // TEMPORARY debug instrumentation, see note above.
-  const immediateSeedCount = featherEnd;
-  let featherAccepted = 0;
-  let featherSnappedZero = 0;
-  let featherRecolored = 0;
-  let featherRejected = 0;
-  let rejectedDistSum = 0;
-  let rejectedDistMin = Infinity;
-  let rejectedDistMax = -Infinity;
-
   let featherStart = 0;
   while (featherStart < featherEnd) {
     const idx = featherQueue[featherStart++];
@@ -259,26 +211,17 @@ export async function removeBackground(
       bgG,
       bgB
     );
-    if (distance > looseThreshold) {
-      // reached genuine item color — stop here
-      featherRejected++;
-      rejectedDistSum += distance;
-      if (distance < rejectedDistMin) rejectedDistMin = distance;
-      if (distance > rejectedDistMax) rejectedDistMax = distance;
-      continue;
-    }
+    if (distance > looseThreshold) continue; // reached genuine item color — stop here
 
     const alphaRatio = Math.max(
       0,
       Math.min(1, (distance - threshold) / FEATHER_WIDTH)
     );
-    featherAccepted++;
     if (alphaRatio < 0.12) {
       // Close enough to pure background that keeping a sliver of it visible
       // does more harm (a faint but noisy-colored speck — see the division
       // below) than good. Treat it as fully removed instead.
       data[i + 3] = 0;
-      featherSnappedZero++;
     } else {
       data[i + 3] = Math.round(alphaRatio * 255);
       // Un-blend: observed = alphaRatio*trueColor + (1-alphaRatio)*bgColor.
@@ -289,7 +232,6 @@ export async function removeBackground(
       data[i + 2] = clampByte(
         (data[i + 2] - (1 - alphaRatio) * bgB) / alphaRatio
       );
-      featherRecolored++;
     }
 
     const x = idx % width;
@@ -305,19 +247,6 @@ export async function removeBackground(
     tryEnqueueFeather(x + 1, y);
     tryEnqueueFeather(x, y - 1);
     tryEnqueueFeather(x, y + 1);
-  }
-
-  // TEMPORARY debug instrumentation, see note above.
-  console.log(
-    `[removeBackground debug] feather pass: ${immediateSeedCount} pixels touched the removed region directly, ${featherEnd} considered in total once the pass expanded`
-  );
-  console.log(
-    `[removeBackground debug] feather pass: accepted ${featherAccepted} (snapped fully transparent: ${featherSnappedZero}, recolored: ${featherRecolored}) — rejected ${featherRejected} as too far from the sampled background (loose threshold ${looseThreshold})`
-  );
-  if (featherRejected > 0) {
-    console.log(
-      `[removeBackground debug] rejected pixels' distance from sampled background — min ${rejectedDistMin.toFixed(1)}, avg ${(rejectedDistSum / featherRejected).toFixed(1)}, max ${rejectedDistMax.toFixed(1)}`
-    );
   }
 
   // Crop to the item's actual bounding box (any pixel left with meaningful
