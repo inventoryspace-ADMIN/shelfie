@@ -44,12 +44,13 @@ export default async function SpacePage({
   const bucket = supabase.storage.from("space-images");
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-8 lg:max-w-6xl">
-      <div>
-        <Link href="/dashboard" className="text-sm text-neutral-500 underline">
-          ← Back
-        </Link>
-        <div className="mt-2 flex items-center gap-2">
+    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 p-8 lg:max-w-6xl">
+      <Link href="/dashboard" className="text-sm text-neutral-500 underline">
+        ← Back
+      </Link>
+
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-medium tracking-wide">{space.name}</h1>
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -68,12 +69,11 @@ export default async function SpacePage({
         </p>
       </div>
 
-      <div className="max-w-sm">
+      <div className="mx-auto w-full max-w-sm">
         <RenameSpaceForm spaceId={space.id} initialName={space.name} />
       </div>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">Items</h2>
+      <div className="flex justify-center">
         <Link
           href={`/dashboard/${spaceId}/items/new`}
           className="rounded bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white"
@@ -81,6 +81,8 @@ export default async function SpacePage({
           Add item
         </Link>
       </div>
+
+      <hr className="border-t border-neutral-200" />
 
       {items && items.length > 0 ? (
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
