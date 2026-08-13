@@ -145,6 +145,17 @@ Both start at 2 columns on mobile — a single column wastes the "browse a
 collection" feeling on a phone, and the display-cabinet card is designed to
 read fine at that size.
 
+**Revisit before Phase 6 ships:** two options doesn't cover the real range
+of collection sizes this product needs to serve — a small curated set (a
+handful of watches, a car) wants very large cards, 1–2 per row on desktop;
+a large one (hundreds of vinyl records, sneakers) wants many small cards
+per row, 10–12 on desktop. Two presets locks in the middle of that range
+and serves neither extreme well. Don't build the six-axis picker against
+just `compact`/`comfortable` by default — expand this table to a wider
+spread (something like a gallery/showcase preset at the large end and a
+dense/catalog preset at the small end, in addition to the two here) as
+part of scoping Phase 6, not after.
+
 ### 6. Layout mode
 
 | Key | Description |
