@@ -17,6 +17,7 @@ export function CrossfadeImage({
   sizes,
   cardShapeClassName = "",
   previewActive,
+  priority,
 }: {
   primaryUrl: string;
   hoverUrl: string | null;
@@ -24,6 +25,12 @@ export function CrossfadeImage({
   sizes: string;
   cardShapeClassName?: string;
   previewActive?: boolean;
+  // For the first couple of above-the-fold cards on the public grid, so
+  // next/image preloads them instead of lazy-loading — meaningfully
+  // improves mobile LCP on the page docs/ROADMAP.md flags as "the page
+  // that matters most." Left unset (lazy) everywhere else, including the
+  // dashboard, which isn't the page that pass is about.
+  priority?: boolean;
 }) {
   return (
     <div
@@ -34,6 +41,7 @@ export function CrossfadeImage({
         alt={alt}
         fill
         sizes={sizes}
+        priority={priority}
         className={`object-contain transition-opacity duration-300 ${
           hoverUrl ? "group-hover:opacity-0 group-hover:delay-500" : ""
         }`}

@@ -17,11 +17,15 @@ export function ItemCardLink({
   item,
   valueLabel,
   theme,
+  sizes,
+  priority,
 }: {
   href: string;
   item: ItemCardData;
   valueLabel: string | null;
   theme: ItemCardTheme;
+  sizes: string;
+  priority?: boolean;
 }) {
   const [previewed, setPreviewed] = useState(false);
 
@@ -43,6 +47,8 @@ export function ItemCardLink({
         valueLabel={valueLabel}
         theme={theme}
         previewActive={previewed}
+        sizes={sizes}
+        priority={priority}
       />
     </Link>
   );

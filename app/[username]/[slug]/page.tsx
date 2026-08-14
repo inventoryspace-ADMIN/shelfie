@@ -21,14 +21,23 @@ export async function generateMetadata({
   if (!result) notFound();
 
   const ownerName = result.profile.display_name ?? result.profile.username;
+  const title = `${result.space.name} — ${ownerName}`;
+  const description = `Browse ${ownerName}'s ${result.space.name}, cataloged on Shelfie.`;
+
   return {
-    title: `${result.space.name} — ${ownerName}`,
-    description: `Browse ${ownerName}'s ${result.space.name}, cataloged on Shelfie.`,
+    title,
+    description,
     // Personal possessions, sometimes with prices, are a different privacy
     // case than a typical unlisted page — sharing here is always
     // deliberate, so search-engine discovery is opt-in, not the default.
     // See docs/ROADMAP.md Phase 5.
     robots: { index: false, follow: false },
+    // No `images` here on purpose — opengraph-image.tsx in this same
+    // route segment is picked up automatically by Next.js's file
+    // convention and merged in (see docs/ARCHITECTURE.md "Generated
+    // share images"). Declaring one here would just duplicate it.
+    openGraph: { title, description, type: "website", siteName: "Shelfie" },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
@@ -50,6 +59,14 @@ export default async function SpacePage({
     )
     .eq("space_id", space.id)
     .order("sort_order", { ascending: true });
+
+  // Only worth linking to /{username} if it actually resolves to more than
+  // this one space — otherwise it just redirects straight back here.
+  const { count: publishedSpaceCount } = await supabase
+    .from("spaces")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", profile.id)
+    .eq("status", "published");
 
   const bucket = supabase.storage.from("space-images");
   const theme = resolveSpaceTheme(space);
@@ -119,8 +136,17 @@ export default async function SpacePage({
             {space.name}
           </h1>
           <p className="text-sm" style={{ opacity: 0.7 }}>
-            {ownerName} · {gridItems.length}{" "}
-            {gridItems.length === 1 ? "item" : "items"}
+            {publishedSpaceCount && publishedSpaceCount > 1 ? (
+              <Link
+                href={`/${username}`}
+                className="underline underline-offset-2"
+              >
+                {ownerName}
+              </Link>
+            ) : (
+              ownerName
+            )}{" "}
+            · {gridItems.length} {gridItems.length === 1 ? "item" : "items"}
           </p>
         </div>
 

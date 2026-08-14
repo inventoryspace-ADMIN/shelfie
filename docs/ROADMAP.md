@@ -120,15 +120,14 @@ and delete it. This is the phase where the product stops being abstract.
   page, linking to `/` — small, doesn't compete visually with the owner's
   items, this is the growth loop since every shared-link visitor is a
   potential new owner.
-- `/dashboard/[spaceId]/settings` page — slug editing, `value_display_mode`
-  (+ `value_currency` when applicable), and the publish/unpublish toggle,
-  per the routing table in `docs/ARCHITECTURE.md`. Bundled here rather
-  than split across phases since all three already live on one page in
-  that plan, and the publish toggle needs a home regardless — a settings
-  gear icon (top right of the space page) becomes this page's entry point
-  once it exists, replacing the ad hoc placement these controls would
-  otherwise need. Theme customisation stays a separate `/theme` page and a
-  separate phase (6) — different axes, different owner task.
+- `/dashboard/[spaceId]/settings` page — slug editing and `value_display_mode`
+  (+ `value_currency` when applicable), per the routing table in
+  `docs/ARCHITECTURE.md`. Theme customisation stays a separate `/theme` page
+  and a separate phase (6) — different axes, different owner task.
+- Publish/unpublish **stays on the space page itself**, not moved to
+  settings — deliberate, revisit later. Publishing is a frequent, high-
+  stakes action; the owner explicitly didn't want it buried behind a
+  settings page once the settings page exists.
 - `opengraph-image.tsx` — generated share card via `@vercel/og`.
 - Full meta tag set (title, description, OG image, Twitter card) on the
   public page.

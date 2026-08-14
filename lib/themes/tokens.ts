@@ -90,6 +90,18 @@ export const GRID_DENSITY_CLASSES = {
   comfortable: "grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
 } as const;
 
+// The `sizes` attribute `next/image` needs to request the right-sized
+// image per breakpoint, matching the actual column counts above exactly —
+// otherwise a mobile visitor on a "compact" (6-column) grid downloads an
+// image sized for a 4-column layout for nothing. Mirrors the column
+// breakpoints 1:1 rather than being a single hardcoded guess shared by
+// both densities.
+export const GRID_DENSITY_SIZES = {
+  compact:
+    "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 16vw",
+  comfortable: "(max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw",
+} as const;
+
 export type GridDensityKey = keyof typeof GRID_DENSITY_CLASSES;
 
 export function isGridDensityKey(value: string): value is GridDensityKey {

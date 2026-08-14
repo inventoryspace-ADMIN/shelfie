@@ -31,11 +31,17 @@ export function ItemCard({
   valueLabel,
   theme,
   previewActive,
+  sizes,
+  priority,
 }: {
   item: ItemCardData;
   valueLabel: string | null;
   theme?: ItemCardTheme;
   previewActive?: boolean;
+  // Matches GRID_DENSITY_SIZES for whichever grid the card sits in — see
+  // lib/themes/tokens.ts.
+  sizes: string;
+  priority?: boolean;
 }) {
   return (
     <div>
@@ -44,9 +50,10 @@ export function ItemCard({
           primaryUrl={item.primaryImageUrl}
           hoverUrl={item.hoverImageUrl}
           alt={item.title}
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          sizes={sizes}
           cardShapeClassName={theme?.cardShapeClassName}
           previewActive={previewActive}
+          priority={priority}
         />
       </div>
       <div className="space-y-0.5 text-center">

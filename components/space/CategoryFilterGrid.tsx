@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { SpaceGrid } from "./SpaceGrid";
 import { ItemCardLink } from "./ItemCardLink";
 import type { ItemCardData, ItemCardTheme } from "./ItemCard";
-import type { GridDensityKey } from "@/lib/themes/tokens";
+import { GRID_DENSITY_SIZES, type GridDensityKey } from "@/lib/themes/tokens";
 
 export interface SpaceGridItem {
   data: ItemCardData;
@@ -81,13 +81,18 @@ export function CategoryFilterGrid({
         </div>
       )}
       <SpaceGrid gridDensity={gridDensity}>
-        {filtered.map(({ data, valueLabel, href }) => (
+        {filtered.map(({ data, valueLabel, href }, index) => (
           <ItemCardLink
             key={data.id}
             href={href}
             item={data}
             valueLabel={valueLabel}
             theme={theme}
+            sizes={GRID_DENSITY_SIZES[gridDensity]}
+            // First row only (both densities start at 2 columns on
+            // mobile — see GRID_DENSITY_CLASSES) — these are the ones
+            // actually above the fold on first paint.
+            priority={index < 2}
           />
         ))}
       </SpaceGrid>

@@ -43,17 +43,22 @@ export async function generateMetadata({
   if (!item) notFound();
 
   const ownerName = result.profile.display_name ?? result.profile.username;
+  const title = `${item.title} — ${result.space.name}`;
+  const description =
+    item.description ||
+    `${item.title}, from ${ownerName}'s ${result.space.name} on Shelfie.`;
+
   return {
-    title: `${item.title} — ${result.space.name}`,
-    description:
-      item.description ||
-      `${item.title}, from ${ownerName}'s ${result.space.name} on Shelfie.`,
+    title,
+    description,
     // Same rule as the parent space page — see docs/ROADMAP.md Phase 5.
     // No dedicated OG image here: this inherits the space's once it
     // exists (Next.js's file convention applies the nearest
     // opengraph-image up the route tree), rather than generating a
     // separate one per item — see docs/ROADMAP.md's post-launch list.
     robots: { index: false, follow: false },
+    openGraph: { title, description, type: "website", siteName: "Shelfie" },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
@@ -131,6 +136,7 @@ export default async function ItemDetailPage({
             alt={item.title}
             sizes="(max-width: 640px) 90vw, 32rem"
             cardShapeClassName={CARD_SHAPE_CLASSES[theme.cardShapeKey]}
+            priority
           />
         </div>
 

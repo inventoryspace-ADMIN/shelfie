@@ -17,10 +17,12 @@ export function DashboardItemCard({
   item,
   valueLabel,
   spaceId,
+  sizes,
 }: {
   item: ItemCardData;
   valueLabel: string | null;
   spaceId: string;
+  sizes: string;
 }) {
   const [tapped, setTapped] = useState(false);
 
@@ -33,7 +35,7 @@ export function DashboardItemCard({
         }
       }}
     >
-      <ItemCard item={item} valueLabel={valueLabel} />
+      <ItemCard item={item} valueLabel={valueLabel} sizes={sizes} />
       <div
         className={`absolute inset-x-0 top-0 flex justify-center gap-3 rounded-t bg-gradient-to-b from-white/95 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 ${
           tapped ? "opacity-100" : ""
