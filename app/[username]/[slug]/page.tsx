@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { SpaceGrid } from "@/components/space/SpaceGrid";
+import { CategoryFilterGrid } from "@/components/space/CategoryFilterGrid";
 import { formatItemValue, type ValueDisplayMode } from "@/lib/items/formatValue";
 import { withCacheBust } from "@/lib/images/uploadItemImage";
 import {
@@ -15,6 +15,7 @@ import {
   isCardShapeKey,
   isGridDensityKey,
   withAlpha,
+  getTextColorOnAccent,
   type GridDensityKey,
 } from "@/lib/themes/tokens";
 import { getFontPairingProps, isFontPairingKey } from "@/lib/themes/fonts";
@@ -183,10 +184,12 @@ export default async function SpacePage({
         </div>
 
         {gridItems.length > 0 ? (
-          <SpaceGrid
+          <CategoryFilterGrid
             items={gridItems}
             gridDensity={gridDensityKey}
             theme={cardTheme}
+            accentColor={accentHex}
+            accentTextColor={getTextColorOnAccent(accentKey)}
           />
         ) : (
           <p className="py-16 text-center text-sm" style={{ opacity: 0.6 }}>

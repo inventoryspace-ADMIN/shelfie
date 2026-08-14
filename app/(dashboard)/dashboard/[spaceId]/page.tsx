@@ -6,7 +6,9 @@ import { EditableSpaceName } from "@/components/dashboard/EditableSpaceName";
 import { ItemCard } from "@/components/space/ItemCard";
 import { DeleteItemButton } from "@/components/dashboard/DeleteItemButton";
 import { PublishToggle } from "@/components/dashboard/PublishToggle";
+import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 import { withCacheBust } from "@/lib/images/uploadItemImage";
+import { getSiteOrigin } from "@/lib/site";
 
 export default async function SpacePage({
   params,
@@ -52,6 +54,9 @@ export default async function SpacePage({
     .order("sort_order", { ascending: true });
 
   const bucket = supabase.storage.from("space-images");
+  const publicUrl = profile
+    ? `${await getSiteOrigin()}/${profile.username}/${space.slug}`
+    : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 p-8 lg:max-w-6xl">
@@ -82,24 +87,19 @@ export default async function SpacePage({
           Add item
         </Link>
         <PublishToggle spaceId={space.id} status={space.status as "draft" | "published"} />
-      </div>
-
-      {space.status === "published" && profile && (
-        // Minimal for now — the real "Copy link" / "Preview" buttons
-        // planned for this same toolbar (see docs/ROADMAP.md Phase 5) are
-        // their own follow-up piece. This just makes what was built here
-        // actually testable in the meantime.
-        <p className="text-center text-xs text-neutral-500">
-          Live at{" "}
+        {profile && (
           <Link
             href={`/${profile.username}/${space.slug}`}
-            className="underline"
             target="_blank"
+            className="rounded border border-neutral-300 px-3 py-1.5 text-sm font-medium"
           >
-            /{profile.username}/{space.slug}
+            Preview
           </Link>
-        </p>
-      )}
+        )}
+        {space.status === "published" && publicUrl && (
+          <CopyLinkButton url={publicUrl} />
+        )}
+      </div>
 
       <hr className="border-t border-neutral-200" />
 
