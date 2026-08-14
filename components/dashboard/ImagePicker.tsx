@@ -135,10 +135,6 @@ export function ImagePicker({
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium">{label}</span>
       {helperText && <p className="text-xs text-neutral-500">{helperText}</p>}
-      <p className="text-xs text-neutral-400">
-        Click the preview, then paste an image (⌘V / Ctrl+V) — or drag one
-        in.
-      </p>
 
       <div className="flex items-start gap-3">
         <div

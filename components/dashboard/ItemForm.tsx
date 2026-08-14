@@ -222,22 +222,23 @@ export function ItemForm({
             />
           </div>
 
-          <div className="lg:col-span-2">
-            <ImagePicker
-              label="Primary photo"
-              value={primaryImage}
-              onChange={setPrimaryImage}
-            />
-          </div>
+          <p className="text-xs text-neutral-400 lg:col-span-2">
+            Click a preview below, then paste an image (⌘V / Ctrl+V) — or
+            drag one in.
+          </p>
 
-          <div className="lg:col-span-2">
-            <ImagePicker
-              label="Hover photo (optional)"
-              helperText="Shown on ~500ms hover as a second angle."
-              value={hoverImage}
-              onChange={setHoverImage}
-            />
-          </div>
+          <ImagePicker
+            label="Primary photo"
+            value={primaryImage}
+            onChange={setPrimaryImage}
+          />
+
+          <ImagePicker
+            label="Hover photo (optional)"
+            helperText="Fades in on hover, as a second angle."
+            value={hoverImage}
+            onChange={setHoverImage}
+          />
         </div>
 
         <button
