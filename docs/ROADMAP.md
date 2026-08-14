@@ -236,6 +236,26 @@ one page tested in Phase 5.*
   Accessibility ≥ 95) and a spot-check on the dashboard.
 - Review every screen against the empty/loading/error state checklist in
   `docs/DESIGN-SYSTEM.md`.
+- Consider a "this background-removal result may not have worked well"
+  warning, surfaced automatically after removal runs — logged here rather
+  than built during Phase 4/5 testing because its real value is for other
+  owners at launch, not for testing on your own account, where you can
+  already see a bad result in the preview yourself. Two candidate
+  detection signals were considered and rejected as too unreliable to
+  ship as-is: **internal holes ratio** (what fraction of the item's own
+  bounding box is transparent) fires constantly on exactly the kind of
+  items this product's own docs call out as core use cases — a golf club,
+  a necklace, sunglasses, a bike, a plant are almost entirely negative
+  space by nature, not damaged. **Fragmentation** (is the result one
+  solid blob or several disconnected pieces) has the same problem the
+  moment someone photographs multiple discrete objects together, e.g. a
+  pair of earrings or two shoes in one frame. Of the two, fragmentation
+  looks like the more reliable signal if this gets built — but any
+  version needs real testing against non-clothing items specifically
+  (golf clubs, jewelry, sunglasses, and similar sparse/multi-piece
+  objects), not just garments, before it ships. A warning that cries wolf
+  on half of non-clothing items teaches owners to ignore it, which is
+  worse than not having it.
 
 **Definition of done:** a written checklist (this section, filled in) with
 every item checked, plus Lighthouse scores pasted in.
