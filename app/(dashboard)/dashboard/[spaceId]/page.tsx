@@ -5,6 +5,7 @@ import { templates } from "@/lib/templates";
 import { EditableSpaceName } from "@/components/dashboard/EditableSpaceName";
 import { ItemCard } from "@/components/space/ItemCard";
 import { DeleteItemButton } from "@/components/dashboard/DeleteItemButton";
+import { PublishToggle } from "@/components/dashboard/PublishToggle";
 import { withCacheBust } from "@/lib/images/uploadItemImage";
 
 export default async function SpacePage({
@@ -35,6 +36,12 @@ export default async function SpacePage({
   if (!space || space.owner_id !== user.id) {
     notFound();
   }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
 
   const { data: items } = await supabase
     .from("items")
@@ -67,14 +74,32 @@ export default async function SpacePage({
         </p>
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex flex-wrap items-start justify-center gap-3">
         <Link
           href={`/dashboard/${spaceId}/items/new`}
           className="rounded bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white"
         >
           Add item
         </Link>
+        <PublishToggle spaceId={space.id} status={space.status as "draft" | "published"} />
       </div>
+
+      {space.status === "published" && profile && (
+        // Minimal for now — the real "Copy link" / "Preview" buttons
+        // planned for this same toolbar (see docs/ROADMAP.md Phase 5) are
+        // their own follow-up piece. This just makes what was built here
+        // actually testable in the meantime.
+        <p className="text-center text-xs text-neutral-500">
+          Live at{" "}
+          <Link
+            href={`/${profile.username}/${space.slug}`}
+            className="underline"
+            target="_blank"
+          >
+            /{profile.username}/{space.slug}
+          </Link>
+        </p>
+      )}
 
       <hr className="border-t border-neutral-200" />
 

@@ -84,3 +84,57 @@ export async function renameSpace(
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/${parsed.data.spaceId}`);
 }
+
+export async function setSpaceStatus(
+  spaceId: string,
+  status: "draft" | "published"
+): Promise<{ error: string } | undefined> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/sign-in");
+
+  const { data: space } = await supabase
+    .from("spaces")
+    .select("owner_id, slug")
+    .eq("id", spaceId)
+    .single();
+
+  if (!space || space.owner_id !== user.id) {
+    return { error: "Space not found." };
+  }
+
+  // Enforced here, not just in the UI — see docs/ROADMAP.md Phase 3: a
+  // space can never be published with zero items.
+  if (status === "published") {
+    const { count } = await supabase
+      .from("items")
+      .select("id", { count: "exact", head: true })
+      .eq("space_id", spaceId);
+
+    if (!count) {
+      return { error: "Add at least one item before publishing." };
+    }
+  }
+
+  const { error } = await supabase
+    .from("spaces")
+    .update({ status })
+    .eq("id", spaceId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
+  revalidatePath(`/dashboard/${spaceId}`);
+  if (profile) {
+    revalidatePath(`/${profile.username}/${space.slug}`);
+  }
+}

@@ -9,6 +9,20 @@ export interface ItemCardData {
   hoverImageUrl: string | null;
 }
 
+// Set by the public space page, which renders against a space's actual
+// six-axis theme (see docs/DESIGN-SYSTEM.md). Left undefined by the
+// dashboard's item manager, which intentionally stays in the app's fixed
+// neutral chrome regardless of any space's theme — the dashboard isn't
+// themed, only the public page is.
+export interface ItemCardTheme {
+  cardShapeClassName: string;
+  headingFontFamily: string;
+  bodyFontFamily: string;
+  titleColor: string;
+  categoryColor: string;
+  valueColor: string;
+}
+
 // The core "digital display cabinet" interaction, per
 // docs/DESIGN-SYSTEM.md: no card background or border, just the
 // (background-removed) photo floating on the page with a soft shadow,
@@ -19,13 +33,17 @@ export interface ItemCardData {
 export function ItemCard({
   item,
   valueLabel,
+  theme,
 }: {
   item: ItemCardData;
   valueLabel: string | null;
+  theme?: ItemCardTheme;
 }) {
   return (
     <div className="group">
-      <div className="relative mb-3 aspect-square [filter:drop-shadow(0_4px_20px_rgb(0_0_0/0.08))]">
+      <div
+        className={`relative mb-3 aspect-square overflow-hidden [filter:drop-shadow(0_4px_20px_rgb(0_0_0/0.08))] ${theme?.cardShapeClassName ?? ""}`}
+      >
         <Image
           src={item.primaryImageUrl}
           alt={item.title}
@@ -49,14 +67,39 @@ export function ItemCard({
         )}
       </div>
       <div className="space-y-0.5 text-center">
-        <h3 className="text-sm font-medium tracking-wide">{item.title}</h3>
+        <h3
+          className="text-sm font-medium tracking-wide"
+          style={
+            theme
+              ? { fontFamily: theme.headingFontFamily, color: theme.titleColor }
+              : undefined
+          }
+        >
+          {item.title}
+        </h3>
         {item.category && (
-          <p className="text-xs uppercase tracking-wide text-neutral-500">
+          <p
+            className={`text-xs uppercase tracking-wide ${theme ? "" : "text-neutral-500"}`}
+            style={
+              theme
+                ? { fontFamily: theme.bodyFontFamily, color: theme.categoryColor }
+                : undefined
+            }
+          >
             {item.category}
           </p>
         )}
         {valueLabel && (
-          <p className="text-xs font-medium text-neutral-700">{valueLabel}</p>
+          <p
+            className={`text-xs font-medium ${theme ? "" : "text-neutral-700"}`}
+            style={
+              theme
+                ? { fontFamily: theme.bodyFontFamily, color: theme.valueColor }
+                : undefined
+            }
+          >
+            {valueLabel}
+          </p>
         )}
       </div>
     </div>
