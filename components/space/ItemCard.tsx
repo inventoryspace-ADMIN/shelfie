@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { CrossfadeImage } from "./CrossfadeImage";
 
 export interface ItemCardData {
   id: string;
@@ -23,48 +23,31 @@ export interface ItemCardTheme {
   valueColor: string;
 }
 
-// The core "digital display cabinet" interaction, per
-// docs/DESIGN-SYSTEM.md: no card background or border, just the
-// (background-removed) photo floating on the page with a soft shadow,
-// cross-fading to a second angle on ~500ms hover. Pure CSS — no JS event
-// handlers needed, so this stays a Server Component. On touch devices,
-// hover simply never triggers, which is the documented, intentional
-// fallback rather than a bug.
+// The core "digital display cabinet" interaction — see CrossfadeImage for
+// the image behavior itself. `previewActive` forwards through to it; see
+// that component's comment for why it exists.
 export function ItemCard({
   item,
   valueLabel,
   theme,
+  previewActive,
 }: {
   item: ItemCardData;
   valueLabel: string | null;
   theme?: ItemCardTheme;
+  previewActive?: boolean;
 }) {
   return (
-    <div className="group">
-      <div
-        className={`relative mb-3 aspect-square overflow-hidden [filter:drop-shadow(0_4px_20px_rgb(0_0_0/0.08))] ${theme?.cardShapeClassName ?? ""}`}
-      >
-        <Image
-          src={item.primaryImageUrl}
+    <div>
+      <div className="mb-3">
+        <CrossfadeImage
+          primaryUrl={item.primaryImageUrl}
+          hoverUrl={item.hoverImageUrl}
           alt={item.title}
-          fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className={`object-contain transition-opacity duration-300 ${
-            item.hoverImageUrl
-              ? "group-hover:opacity-0 group-hover:delay-500"
-              : ""
-          }`}
+          cardShapeClassName={theme?.cardShapeClassName}
+          previewActive={previewActive}
         />
-        {item.hoverImageUrl && (
-          <Image
-            src={item.hoverImageUrl}
-            alt=""
-            aria-hidden
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-contain opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:delay-500"
-          />
-        )}
       </div>
       <div className="space-y-0.5 text-center">
         <h3

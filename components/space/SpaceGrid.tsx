@@ -1,9 +1,11 @@
-import { ItemCard, type ItemCardData, type ItemCardTheme } from "./ItemCard";
+import { ItemCardLink } from "./ItemCardLink";
+import type { ItemCardData, ItemCardTheme } from "./ItemCard";
 import { GRID_DENSITY_CLASSES, type GridDensityKey } from "@/lib/themes/tokens";
 
 export interface SpaceGridItem {
   data: ItemCardData;
   valueLabel: string | null;
+  href: string;
 }
 
 // Renders the "grid" layout mode only. `layout_mode` has no picker UI yet
@@ -23,8 +25,14 @@ export function SpaceGrid({
 }) {
   return (
     <div className={`grid ${GRID_DENSITY_CLASSES[gridDensity]}`}>
-      {items.map(({ data, valueLabel }) => (
-        <ItemCard key={data.id} item={data} valueLabel={valueLabel} theme={theme} />
+      {items.map(({ data, valueLabel, href }) => (
+        <ItemCardLink
+          key={data.id}
+          href={href}
+          item={data}
+          valueLabel={valueLabel}
+          theme={theme}
+        />
       ))}
     </div>
   );

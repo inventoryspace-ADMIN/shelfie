@@ -1,4 +1,3 @@
-import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -6,49 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { CategoryFilterGrid } from "@/components/space/CategoryFilterGrid";
 import { formatItemValue, type ValueDisplayMode } from "@/lib/items/formatValue";
 import { withCacheBust } from "@/lib/images/uploadItemImage";
-import {
-  ACCENT_COLORS,
-  isAccentColorKey,
-  BACKGROUND_TREATMENTS,
-  isBackgroundTreatmentKey,
-  CARD_SHAPE_CLASSES,
-  isCardShapeKey,
-  isGridDensityKey,
-  withAlpha,
-  getTextColorOnAccent,
-  type GridDensityKey,
-} from "@/lib/themes/tokens";
-import { getFontPairingProps, isFontPairingKey } from "@/lib/themes/fonts";
-
-// Shared by generateMetadata and the page body so a request only ever
-// queries the profile+space once — React's cache() dedupes calls with the
-// same arguments within one render.
-const getPublicSpace = cache(async (username: string, slug: string) => {
-  const supabase = await createClient();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, username, display_name")
-    .eq("username", username)
-    .maybeSingle();
-  if (!profile) return null;
-
-  const { data: space } = await supabase
-    .from("spaces")
-    .select(
-      "id, name, status, accent_color, font_pairing, background_treatment, card_shape, grid_density, layout_mode, value_display_mode, value_currency"
-    )
-    .eq("owner_id", profile.id)
-    .eq("slug", slug)
-    .maybeSingle();
-  // RLS already restricts this to published spaces, or the owner's own —
-  // if nothing came back, "doesn't exist" and "exists but is a private
-  // draft" are indistinguishable on purpose (see docs/DESIGN-SYSTEM.md
-  // 404 state: a guessed URL can't be used to confirm either way).
-  if (!space) return null;
-
-  return { profile, space };
-});
+import { getPublicSpace } from "@/lib/spaces/getPublicSpace";
+import { CARD_SHAPE_CLASSES, withAlpha } from "@/lib/themes/tokens";
+import { resolveSpaceTheme } from "@/lib/themes/resolveSpaceTheme";
 
 type PageParams = { username: string; slug: string };
 
@@ -93,39 +52,20 @@ export default async function SpacePage({
     .order("sort_order", { ascending: true });
 
   const bucket = supabase.storage.from("space-images");
-
-  const accentKey = isAccentColorKey(space.accent_color)
-    ? space.accent_color
-    : "graphite";
-  const backgroundKey = isBackgroundTreatmentKey(space.background_treatment)
-    ? space.background_treatment
-    : "gallery-white";
-  const cardShapeKey = isCardShapeKey(space.card_shape)
-    ? space.card_shape
-    : "square";
-  const gridDensityKey: GridDensityKey = isGridDensityKey(space.grid_density)
-    ? space.grid_density
-    : "comfortable";
-  const fontPairingKey = isFontPairingKey(space.font_pairing)
-    ? space.font_pairing
-    : "modern-sans";
+  const theme = resolveSpaceTheme(space);
   const valueDisplayMode: ValueDisplayMode =
     space.value_display_mode === "currency" ||
     space.value_display_mode === "number"
       ? space.value_display_mode
       : "hidden";
 
-  const { background, foreground } = BACKGROUND_TREATMENTS[backgroundKey];
-  const accentHex = ACCENT_COLORS[accentKey];
-  const fontProps = getFontPairingProps(fontPairingKey);
-
   const cardTheme = {
-    cardShapeClassName: CARD_SHAPE_CLASSES[cardShapeKey],
+    cardShapeClassName: CARD_SHAPE_CLASSES[theme.cardShapeKey],
     headingFontFamily: "var(--space-font-heading)",
     bodyFontFamily: "var(--space-font-body)",
-    titleColor: foreground,
-    categoryColor: withAlpha(foreground, 0.6),
-    valueColor: withAlpha(foreground, 0.8),
+    titleColor: theme.foreground,
+    categoryColor: withAlpha(theme.foreground, 0.6),
+    valueColor: withAlpha(theme.foreground, 0.8),
   };
 
   const gridItems = (items ?? []).map((item) => ({
@@ -150,21 +90,22 @@ export default async function SpacePage({
       valueDisplayMode,
       space.value_currency
     ),
+    href: `/${username}/${slug}/${item.id}`,
   }));
 
   const ownerName = profile.display_name ?? profile.username;
 
   return (
     <main
-      className={fontProps.className}
+      className={theme.fontProps.className}
       style={
         {
-          ...fontProps.style,
-          backgroundColor: background,
-          color: foreground,
+          ...theme.fontProps.style,
+          backgroundColor: theme.background,
+          color: theme.foreground,
           fontFamily: "var(--space-font-body)",
-          "--space-foreground": foreground,
-          "--space-accent": accentHex,
+          "--space-foreground": theme.foreground,
+          "--space-accent": theme.accentHex,
           minHeight: "100dvh",
         } as React.CSSProperties
       }
@@ -172,7 +113,7 @@ export default async function SpacePage({
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8">
         <div className="flex flex-col items-center gap-2 text-center">
           <h1
-            className={`text-3xl tracking-wide ${fontProps.headingWeightClass}`}
+            className={`text-3xl tracking-wide ${theme.fontProps.headingWeightClass}`}
             style={{ fontFamily: "var(--space-font-heading)" }}
           >
             {space.name}
@@ -186,10 +127,10 @@ export default async function SpacePage({
         {gridItems.length > 0 ? (
           <CategoryFilterGrid
             items={gridItems}
-            gridDensity={gridDensityKey}
+            gridDensity={theme.gridDensityKey}
             theme={cardTheme}
-            accentColor={accentHex}
-            accentTextColor={getTextColorOnAccent(accentKey)}
+            accentColor={theme.accentHex}
+            accentTextColor={theme.accentTextColor}
           />
         ) : (
           <p className="py-16 text-center text-sm" style={{ opacity: 0.6 }}>
@@ -201,7 +142,7 @@ export default async function SpacePage({
           <Link
             href="/"
             className="underline underline-offset-2"
-            style={{ color: accentHex }}
+            style={{ color: theme.accentHex }}
           >
             Made with Shelfie
           </Link>
