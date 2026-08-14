@@ -65,6 +65,46 @@ export default async function SpacePage({
     ? space.grid_density
     : "comfortable";
 
+  const gridContent =
+    items && items.length > 0 ? (
+      <SpaceGrid gridDensity={gridDensityKey}>
+        {items.map((item) => (
+          <DashboardItemCard
+            key={item.id}
+            spaceId={spaceId}
+            item={{
+              id: item.id,
+              title: item.title,
+              category: item.category,
+              value: item.value,
+              primaryImageUrl: withCacheBust(
+                bucket.getPublicUrl(item.primary_image_path).data.publicUrl,
+                item.updated_at
+              ),
+              hoverImageUrl: item.hover_image_path
+                ? withCacheBust(
+                    bucket.getPublicUrl(item.hover_image_path).data
+                      .publicUrl,
+                    item.updated_at
+                  )
+                : null,
+            }}
+            valueLabel={item.value != null ? String(item.value) : null}
+          />
+        ))}
+      </SpaceGrid>
+    ) : (
+      <div className="rounded border border-dashed border-neutral-300 p-8 text-center">
+        <p className="text-sm text-neutral-500">No items yet.</p>
+        <Link
+          href={`/dashboard/${spaceId}/items/new`}
+          className="mt-3 inline-block text-sm font-medium underline"
+        >
+          Add your first item
+        </Link>
+      </div>
+    );
+
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 p-8 lg:max-w-6xl">
       <Link href="/dashboard" className="text-sm text-neutral-500 underline">
@@ -108,50 +148,14 @@ export default async function SpacePage({
         )}
       </div>
 
-      {profile && (
-        <DevicePreview url={`/${profile.username}/${space.slug}`} />
-      )}
-
       <hr className="border-t border-neutral-200" />
 
-      {items && items.length > 0 ? (
-        <SpaceGrid gridDensity={gridDensityKey}>
-          {items.map((item) => (
-            <DashboardItemCard
-              key={item.id}
-              spaceId={spaceId}
-              item={{
-                id: item.id,
-                title: item.title,
-                category: item.category,
-                value: item.value,
-                primaryImageUrl: withCacheBust(
-                  bucket.getPublicUrl(item.primary_image_path).data
-                    .publicUrl,
-                  item.updated_at
-                ),
-                hoverImageUrl: item.hover_image_path
-                  ? withCacheBust(
-                      bucket.getPublicUrl(item.hover_image_path).data
-                        .publicUrl,
-                      item.updated_at
-                    )
-                  : null,
-              }}
-              valueLabel={item.value != null ? String(item.value) : null}
-            />
-          ))}
-        </SpaceGrid>
+      {profile ? (
+        <DevicePreview url={`/${profile.username}/${space.slug}`}>
+          {gridContent}
+        </DevicePreview>
       ) : (
-        <div className="rounded border border-dashed border-neutral-300 p-8 text-center">
-          <p className="text-sm text-neutral-500">No items yet.</p>
-          <Link
-            href={`/dashboard/${spaceId}/items/new`}
-            className="mt-3 inline-block text-sm font-medium underline"
-          >
-            Add your first item
-          </Link>
-        </div>
+        gridContent
       )}
     </main>
   );
