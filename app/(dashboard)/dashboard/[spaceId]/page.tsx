@@ -3,12 +3,14 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { templates } from "@/lib/templates";
 import { EditableSpaceName } from "@/components/dashboard/EditableSpaceName";
-import { ItemCard } from "@/components/space/ItemCard";
-import { DeleteItemButton } from "@/components/dashboard/DeleteItemButton";
+import { DashboardItemCard } from "@/components/dashboard/DashboardItemCard";
 import { PublishToggle } from "@/components/dashboard/PublishToggle";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
+import { DevicePreview } from "@/components/dashboard/DevicePreview";
+import { SpaceGrid } from "@/components/space/SpaceGrid";
 import { withCacheBust } from "@/lib/images/uploadItemImage";
 import { getSiteOrigin } from "@/lib/site";
+import { isGridDensityKey } from "@/lib/themes/tokens";
 
 export default async function SpacePage({
   params,
@@ -28,7 +30,7 @@ export default async function SpacePage({
 
   const { data: space } = await supabase
     .from("spaces")
-    .select("id, name, slug, template, status, owner_id, created_at")
+    .select("id, name, slug, template, status, owner_id, created_at, grid_density")
     .eq("id", spaceId)
     .single();
 
@@ -57,6 +59,11 @@ export default async function SpacePage({
   const publicUrl = profile
     ? `${await getSiteOrigin()}/${profile.username}/${space.slug}`
     : null;
+  // Same grid_density the public page reads — see components/space/SpaceGrid.tsx.
+  // Falls back to the column's own database default if somehow invalid.
+  const gridDensityKey = isGridDensityKey(space.grid_density)
+    ? space.grid_density
+    : "comfortable";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 p-8 lg:max-w-6xl">
@@ -101,49 +108,40 @@ export default async function SpacePage({
         )}
       </div>
 
+      {profile && (
+        <DevicePreview url={`/${profile.username}/${space.slug}`} />
+      )}
+
       <hr className="border-t border-neutral-200" />
 
       {items && items.length > 0 ? (
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <SpaceGrid gridDensity={gridDensityKey}>
           {items.map((item) => (
-            <div key={item.id}>
-              <ItemCard
-                item={{
-                  id: item.id,
-                  title: item.title,
-                  category: item.category,
-                  value: item.value,
-                  primaryImageUrl: withCacheBust(
-                    bucket.getPublicUrl(item.primary_image_path).data
-                      .publicUrl,
-                    item.updated_at
-                  ),
-                  hoverImageUrl: item.hover_image_path
-                    ? withCacheBust(
-                        bucket.getPublicUrl(item.hover_image_path).data
-                          .publicUrl,
-                        item.updated_at
-                      )
-                    : null,
-                }}
-                valueLabel={item.value != null ? String(item.value) : null}
-              />
-              <div className="mt-2 flex justify-center gap-3">
-                <Link
-                  href={`/dashboard/${spaceId}/items/${item.id}/edit`}
-                  className="text-xs underline"
-                >
-                  Edit
-                </Link>
-                <DeleteItemButton
-                  itemId={item.id}
-                  spaceId={spaceId}
-                  itemTitle={item.title}
-                />
-              </div>
-            </div>
+            <DashboardItemCard
+              key={item.id}
+              spaceId={spaceId}
+              item={{
+                id: item.id,
+                title: item.title,
+                category: item.category,
+                value: item.value,
+                primaryImageUrl: withCacheBust(
+                  bucket.getPublicUrl(item.primary_image_path).data
+                    .publicUrl,
+                  item.updated_at
+                ),
+                hoverImageUrl: item.hover_image_path
+                  ? withCacheBust(
+                      bucket.getPublicUrl(item.hover_image_path).data
+                        .publicUrl,
+                      item.updated_at
+                    )
+                  : null,
+              }}
+              valueLabel={item.value != null ? String(item.value) : null}
+            />
           ))}
-        </div>
+        </SpaceGrid>
       ) : (
         <div className="rounded border border-dashed border-neutral-300 p-8 text-center">
           <p className="text-sm text-neutral-500">No items yet.</p>
