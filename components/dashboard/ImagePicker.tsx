@@ -134,7 +134,6 @@ export function ImagePicker({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium">{label}</span>
-      {helperText && <p className="text-xs text-neutral-500">{helperText}</p>}
 
       <div className="flex items-start gap-3">
         <div
@@ -241,6 +240,8 @@ export function ImagePicker({
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
       </div>
+
+      {helperText && <p className="text-xs text-neutral-500">{helperText}</p>}
     </div>
   );
 }
