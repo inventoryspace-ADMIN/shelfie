@@ -102,6 +102,11 @@ export async function removeBackground(
   const bgG = sumG / borderCount;
   const bgB = sumB / borderCount;
 
+  // TEMPORARY — diagnosing the "Remove less" shrink/eating-into-item
+  // report. Remove once resolved.
+  console.log("[removeBackground] canvas", width, "x", height, "=", width * height, "px");
+  console.log("[removeBackground] sampled background", { bgR, bgG, bgB, threshold });
+
   // Flood fill from every border pixel, 4-connected, marking pixels
   // within `threshold` of the sampled background color as transparent.
   const visited = new Uint8Array(width * height);
@@ -146,6 +151,14 @@ export async function removeBackground(
     tryEnqueue(x, y - 1);
     tryEnqueue(x, y + 1);
   }
+
+  // TEMPORARY — see note above.
+  console.log(
+    "[removeBackground] primary fill removed",
+    queueEnd,
+    "px",
+    `(${((queueEnd / (width * height)) * 100).toFixed(1)}% of canvas)`
+  );
 
   // Soften the hard flood-fill boundary, and defringe it. A pixel right at
   // the edge of the removed region is usually a color *blend* of the item
@@ -199,6 +212,11 @@ export async function removeBackground(
     }
   }
 
+  // TEMPORARY — see note above.
+  let featherStoppedCount = 0;
+  let featherZeroedCount = 0;
+  let featherPartialCount = 0;
+
   let featherStart = 0;
   while (featherStart < featherEnd) {
     const idx = featherQueue[featherStart++];
@@ -211,7 +229,10 @@ export async function removeBackground(
       bgG,
       bgB
     );
-    if (distance > looseThreshold) continue; // reached genuine item color — stop here
+    if (distance > looseThreshold) {
+      featherStoppedCount++;
+      continue; // reached genuine item color — stop here
+    }
 
     const alphaRatio = Math.max(
       0,
@@ -222,7 +243,9 @@ export async function removeBackground(
       // does more harm (a faint but noisy-colored speck — see the division
       // below) than good. Treat it as fully removed instead.
       data[i + 3] = 0;
+      featherZeroedCount++;
     } else {
+      featherPartialCount++;
       data[i + 3] = Math.round(alphaRatio * 255);
       // Un-blend: observed = alphaRatio*trueColor + (1-alphaRatio)*bgColor.
       data[i] = clampByte((data[i] - (1 - alphaRatio) * bgR) / alphaRatio);
@@ -248,6 +271,15 @@ export async function removeBackground(
     tryEnqueueFeather(x, y - 1);
     tryEnqueueFeather(x, y + 1);
   }
+
+  // TEMPORARY — see note above.
+  console.log("[removeBackground] feather pass", {
+    looseThreshold,
+    pixelsQueued: featherEnd,
+    stoppedAtGenuineColor: featherStoppedCount,
+    fullyZeroed: featherZeroedCount,
+    keptPartial: featherPartialCount,
+  });
 
   // Crop to the item's actual bounding box (any pixel left with meaningful
   // opacity), not the original photo's canvas. Two photos of the same item
@@ -275,8 +307,25 @@ export async function removeBackground(
   if (maxX < minX || maxY < minY) {
     // Nothing survived (e.g. a near-uniform photo) — fall back to the
     // uncropped result rather than producing an empty image.
+    console.log("[removeBackground] nothing survived — returning uncropped");
     return canvas.toDataURL("image/png");
   }
+
+  // TEMPORARY — see note above.
+  console.log("[removeBackground] bounding box", {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    boxWidth: maxX - minX + 1,
+    boxHeight: maxY - minY + 1,
+    canvasWidth: width,
+    canvasHeight: height,
+    coverageOfCanvas: `${(
+      (((maxX - minX + 1) * (maxY - minY + 1)) / (width * height)) *
+      100
+    ).toFixed(1)}%`,
+  });
 
   const boxWidth = maxX - minX + 1;
   const boxHeight = maxY - minY + 1;
