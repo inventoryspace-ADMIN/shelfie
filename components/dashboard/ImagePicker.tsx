@@ -16,8 +16,14 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 // the gap from DEFAULT_THRESHOLD down to MIN_THRESHOLD on purpose, so
 // "Remove less" has more than a couple of clicks' worth of room on a photo
 // that needs several nudges before the fill stops eating into the item.
+// MIN_THRESHOLD can't go much below this: ordinary photo noise (JPEG
+// compression, subtle lighting falloff) already varies a background by a
+// few color units pixel to pixel, so a tolerance tighter than that stops
+// the flood fill from clearing the background at all — which doesn't fail
+// loudly, it just leaves most of the original frame intact around the
+// item, making the cropped result look like the picture shrank.
 const THRESHOLD_STEP = 10;
-const MIN_THRESHOLD = 5;
+const MIN_THRESHOLD = 15;
 const MAX_THRESHOLD = 150;
 
 export function ImagePicker({
