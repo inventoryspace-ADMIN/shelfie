@@ -82,8 +82,7 @@ function applyRemoval(
   bgR: number,
   bgG: number,
   bgB: number,
-  threshold: number,
-  debugLabel: string
+  threshold: number
 ): Bounds | null {
   const visited = new Uint8Array(width * height);
   const queue = new Int32Array(width * height);
@@ -120,14 +119,6 @@ function applyRemoval(
     tryEnqueue(x, y - 1);
     tryEnqueue(x, y + 1);
   }
-
-  // TEMPORARY — see note in removeBackground.
-  console.log(
-    `[removeBackground:${debugLabel}] primary fill removed`,
-    queueEnd,
-    "px",
-    `(${((queueEnd / (width * height)) * 100).toFixed(1)}% of canvas)`
-  );
 
   // Soften the hard flood-fill boundary, and defringe it — see
   // removeBackground's original comment for the full reasoning. `threshold`
@@ -205,19 +196,6 @@ function applyRemoval(
     }
   }
 
-  // TEMPORARY — see note in removeBackground.
-  console.log(`[removeBackground:${debugLabel}] bounding box`, {
-    minX,
-    minY,
-    maxX,
-    maxY,
-    boxWidth: maxX - minX + 1,
-    boxHeight: maxY - minY + 1,
-    canvasWidth: width,
-    canvasHeight: height,
-    coverageOfCanvas: `${(((maxX - minX + 1) * (maxY - minY + 1)) / (width * height) * 100).toFixed(1)}%`,
-  });
-
   if (maxX < minX || maxY < minY) return null;
   return { minX, minY, maxX, maxY };
 }
@@ -278,11 +256,6 @@ export async function removeBackground(
   const bgG = sumG / borderCount;
   const bgB = sumB / borderCount;
 
-  // TEMPORARY — diagnosing the "Remove less" shrink/eating-into-item
-  // report. Remove once resolved.
-  console.log("[removeBackground] canvas", width, "x", height, "=", width * height, "px");
-  console.log("[removeBackground] sampled background", { bgR, bgG, bgB, threshold });
-
   // The crop frame is decided separately from the actual pixel removal.
   // Cropping to whatever threshold the caller picked meant the frame's own
   // size rode on how successfully *that* threshold cleared the background
@@ -298,20 +271,11 @@ export async function removeBackground(
   // us both, so there's no need for a second one.
   let frameBounds: Bounds | null;
   if (threshold === DEFAULT_THRESHOLD) {
-    frameBounds = applyRemoval(data, width, height, bgR, bgG, bgB, threshold, "real+frame");
+    frameBounds = applyRemoval(data, width, height, bgR, bgG, bgB, threshold);
   } else {
     const referenceData = ctx.getImageData(0, 0, width, height).data;
-    frameBounds = applyRemoval(
-      referenceData,
-      width,
-      height,
-      bgR,
-      bgG,
-      bgB,
-      DEFAULT_THRESHOLD,
-      "frame-reference"
-    );
-    applyRemoval(data, width, height, bgR, bgG, bgB, threshold, "real");
+    frameBounds = applyRemoval(referenceData, width, height, bgR, bgG, bgB, DEFAULT_THRESHOLD);
+    applyRemoval(data, width, height, bgR, bgG, bgB, threshold);
   }
 
   ctx.putImageData(imageData, 0, 0);
@@ -319,7 +283,6 @@ export async function removeBackground(
   if (!frameBounds) {
     // Nothing survived (e.g. a near-uniform photo) — fall back to the
     // uncropped result rather than producing an empty image.
-    console.log("[removeBackground] nothing survived — returning uncropped");
     return canvas.toDataURL("image/png");
   }
 
