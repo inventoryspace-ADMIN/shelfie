@@ -15,7 +15,21 @@
 
 const MAX_DIMENSION = 1200;
 export const DEFAULT_THRESHOLD = 45;
-const FEATHER_WIDTH = 30;
+// The feather/defringe pass (below) runs at threshold + a margin, not
+// threshold itself — it's deliberately allowed a bit more reach than the
+// main fill to catch the blended edge pixels the main fill's harder cutoff
+// leaves behind. That margin used to be a flat +30 regardless of the
+// caller's threshold, which meant it barely tightened at all as "Remove
+// less" pushed threshold down — at the tightest setting it stayed close to
+// the untouched default's aggressiveness, so it ended up doing most of the
+// actual removal (with an algorithm meant for a thin edge band, not bulk
+// clearing) and visibly eating into the item on a photo whose colors sit
+// close to its background. Expressing it as a ratio of threshold instead
+// means it shrinks together with "Remove less" — this ratio is calibrated
+// so DEFAULT_THRESHOLD still produces exactly the old flat 30, leaving the
+// default experience unchanged.
+const FEATHER_RATIO = 30 / DEFAULT_THRESHOLD;
+const MIN_FEATHER_WIDTH = 8; // never soften so little the old dark-ring bug comes back
 const CROP_PADDING_RATIO = 0.04;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -192,7 +206,8 @@ export async function removeBackground(
   // fixed number serves both, and there's no way to tell which situation a
   // given photo is in from the pixels alone — that's what the "Remove
   // more" / "Remove less" controls in ImagePicker are for.
-  const looseThreshold = threshold + FEATHER_WIDTH;
+  const featherWidth = Math.max(MIN_FEATHER_WIDTH, Math.round(threshold * FEATHER_RATIO));
+  const looseThreshold = threshold + featherWidth;
   const featherQueue = new Int32Array(width * height);
   let featherEnd = 0;
   const inFeatherQueue = new Uint8Array(width * height);
@@ -236,7 +251,7 @@ export async function removeBackground(
 
     const alphaRatio = Math.max(
       0,
-      Math.min(1, (distance - threshold) / FEATHER_WIDTH)
+      Math.min(1, (distance - threshold) / featherWidth)
     );
     if (alphaRatio < 0.12) {
       // Close enough to pure background that keeping a sliver of it visible
@@ -274,6 +289,7 @@ export async function removeBackground(
 
   // TEMPORARY — see note above.
   console.log("[removeBackground] feather pass", {
+    featherWidth,
     looseThreshold,
     pixelsQueued: featherEnd,
     stoppedAtGenuineColor: featherStoppedCount,
