@@ -100,6 +100,7 @@ export type Database = {
           background_treatment: string
           card_shape: string
           created_at: string
+          first_published_at: string | null
           font_pairing: string
           grid_density: string
           id: string
@@ -119,6 +120,7 @@ export type Database = {
           background_treatment?: string
           card_shape?: string
           created_at?: string
+          first_published_at?: string | null
           font_pairing?: string
           grid_density?: string
           id?: string
@@ -138,6 +140,7 @@ export type Database = {
           background_treatment?: string
           card_shape?: string
           created_at?: string
+          first_published_at?: string | null
           font_pairing?: string
           grid_density?: string
           id?: string

@@ -30,7 +30,9 @@ export default async function SpacePage({
 
   const { data: space } = await supabase
     .from("spaces")
-    .select("id, name, slug, template, status, owner_id, created_at, grid_density")
+    .select(
+      "id, name, slug, template, status, owner_id, created_at, grid_density, first_published_at"
+    )
     .eq("id", spaceId)
     .single();
 
@@ -157,7 +159,16 @@ export default async function SpacePage({
         >
           Add item
         </Link>
-        <PublishToggle spaceId={space.id} status={space.status as "draft" | "published"} />
+        {profile && (
+          <PublishToggle
+            spaceId={space.id}
+            status={space.status as "draft" | "published"}
+            slug={space.slug}
+            username={profile.username}
+            hasEverPublished={space.first_published_at != null}
+            hasItems={!!items && items.length > 0}
+          />
+        )}
         {profile && (
           <Link
             href={`/${profile.username}/${space.slug}`}

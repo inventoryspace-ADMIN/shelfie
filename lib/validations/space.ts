@@ -41,3 +41,10 @@ export const updateSpaceSettingsSchema = z
   );
 
 export type UpdateSpaceSettingsInput = z.infer<typeof updateSpaceSettingsSchema>;
+
+export const publishSpaceSchema = z.object({
+  spaceId: z.string().uuid(),
+  slug: spaceSlugSchema,
+});
+
+export type PublishSpaceInput = z.infer<typeof publishSpaceSchema>;

@@ -83,6 +83,7 @@ account can own multiple spaces.
 | `value_display_mode` | `text` | One of `'hidden'`, `'currency'`, `'number'`. Controls whether item prices/quantities show at all on this space, and how. |
 | `value_currency` | `text` | ISO 4217 code (e.g. `'USD'`, `'GBP'`), only meaningful when `value_display_mode = 'currency'`. Nullable. |
 | `og_image_path` | `text` | Storage path of the cached generated share-preview image. Nullable until first generated. |
+| `first_published_at` | `timestamptz` | Set once, the first time a space's `status` ever becomes `'published'`. Nullable — null means "never published." Distinct from `status` itself, which flips back to `'draft'` on unpublish; this timestamp never resets. Used to show the full URL-confirmation dialog only on a space's very first publish (see `lib/actions/spaces.ts` `publishSpace()`), and available later for a "live since" display. |
 | `created_at` | `timestamptz` | Default `now()`. |
 | `updated_at` | `timestamptz` | Default `now()`, kept current by trigger. |
 
@@ -94,6 +95,14 @@ account can own multiple spaces.
 
 **Indexes:** `owner_id`, and the unique `(owner_id, slug)` composite (which
 also serves as the lookup index for the public page route).
+
+**Known gap (documented, not fixed in v1):** if an owner changes a space's
+`slug` after publishing, any link already shared using the old slug breaks
+— there is no redirect. Same gap as `profiles.username` above. Mitigated,
+not solved: the owner sees a warning at the point of editing (in
+`/dashboard/[spaceId]/settings`, and in the first-publish confirmation
+dialog once a slug has actually gone live) rather than discovering it only
+after a link stops working.
 
 **Why explicit typed columns instead of one JSONB "theme" blob:** the six
 customisation axes are a small, fixed, fully-known set (that's the whole
