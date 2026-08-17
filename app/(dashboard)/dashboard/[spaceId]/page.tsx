@@ -6,6 +6,7 @@ import { EditableSpaceName } from "@/components/dashboard/EditableSpaceName";
 import { DashboardItemCard } from "@/components/dashboard/DashboardItemCard";
 import { PublishToggle } from "@/components/dashboard/PublishToggle";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
+import { ExpandingToolbar } from "@/components/dashboard/ExpandingToolbar";
 import { DevicePreview } from "@/components/dashboard/DevicePreview";
 import { SpaceGrid } from "@/components/space/SpaceGrid";
 import { withCacheBust } from "@/lib/images/uploadItemImage";
@@ -152,7 +153,7 @@ export default async function SpacePage({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-start justify-center gap-3">
+      <ExpandingToolbar>
         <Link
           href={`/dashboard/${spaceId}/items/new`}
           className="rounded bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white"
@@ -181,7 +182,7 @@ export default async function SpacePage({
         {space.status === "published" && publicUrl && (
           <CopyLinkButton url={publicUrl} />
         )}
-      </div>
+      </ExpandingToolbar>
 
       <hr className="border-t border-neutral-200" />
 
