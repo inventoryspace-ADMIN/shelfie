@@ -12,6 +12,14 @@ import { useState } from "react";
 // so keyboard access never depends on hovering at all. Touch has neither,
 // so tapping the pill toggles the same expanded state explicitly, the same
 // pattern DashboardItemCard already uses for its hover-only edit overlay.
+//
+// Opening is instant, but closing waits a second after the cursor actually
+// leaves (delay-1000, cancelled back to delay-0 the moment group-hover or
+// group-focus-within is true again) — a brief, imprecise mouse movement off
+// the toolbar shouldn't snap it shut, which reads as flaky/twitchy for
+// anyone with reduced pointer precision. Same delay on both layers so the
+// pill and the row stay in sync while closing, instead of the pill
+// reappearing underneath still-visible buttons.
 export function ExpandingToolbar({ children }: { children: React.ReactNode }) {
   const [tapped, setTapped] = useState(false);
 
@@ -28,7 +36,7 @@ export function ExpandingToolbar({ children }: { children: React.ReactNode }) {
           actually focusable/operable, so this never needs to be. */}
       <div
         aria-hidden="true"
-        className={`col-start-1 row-start-1 rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium text-neutral-600 transition-opacity duration-200 ease-out group-hover:opacity-0 group-focus-within:opacity-0 ${
+        className={`col-start-1 row-start-1 rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium text-neutral-600 transition-opacity duration-200 ease-out delay-1000 group-hover:opacity-0 group-hover:delay-0 group-focus-within:opacity-0 group-focus-within:delay-0 ${
           tapped ? "opacity-0" : "opacity-100"
         }`}
       >
@@ -36,7 +44,7 @@ export function ExpandingToolbar({ children }: { children: React.ReactNode }) {
       </div>
 
       <div
-        className={`col-start-1 row-start-1 flex flex-wrap items-start justify-center gap-3 pointer-events-none opacity-0 scale-0 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:opacity-100 group-hover:scale-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:scale-100 ${
+        className={`col-start-1 row-start-1 flex flex-wrap items-start justify-center gap-3 pointer-events-none opacity-0 scale-0 transition-all duration-200 ease-out delay-1000 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:scale-100 group-hover:delay-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:scale-100 group-focus-within:delay-0 ${
           tapped ? "pointer-events-auto opacity-100 scale-100" : ""
         }`}
       >
